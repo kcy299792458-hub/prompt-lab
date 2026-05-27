@@ -57,7 +57,7 @@ export default function PromptDetailPage() {
           </span>
           <span>
             <strong>프롬프트랩</strong>
-            <small>Image prompt archive</small>
+            <small>AI 이미지 갤러리</small>
           </span>
         </Link>
         <nav className="topnav dc-topnav" aria-label="주요 메뉴">
