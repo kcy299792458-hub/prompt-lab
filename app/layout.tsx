@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image-v2.png",
         width: 1200,
         height: 630,
         alt: "프롬프트랩 대표 이미지",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "프롬프트랩",
     description: "결과 이미지와 프롬프트 원문을 함께 보는 AI 이미지 커뮤니티.",
-    images: ["/og-image.png"],
+    images: ["/og-image-v2.png"],
   },
 };
 
