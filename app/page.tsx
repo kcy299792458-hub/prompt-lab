@@ -117,7 +117,8 @@ export default function Home() {
 
       <section className="dc-headline">
         <div>
-          <h1>잘 뽑힌 이미지엔 이유가 있다</h1>
+          <h1>프롬프트 실험실</h1>
+          <p>이미지, 원문, 모델까지 한 번에 확인</p>
         </div>
         <label className="dc-search">
           <Search size={17} aria-hidden="true" />
