@@ -179,6 +179,10 @@
   padding: 3px 6px;
 }
 
+.dc-rank-box .dc-rank-head-link {
+  color: #ffffff;
+}
+
 .dc-rank-box ol {
   list-style: none;
   margin: 0;
