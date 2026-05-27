@@ -16,6 +16,7 @@ export function AuthControls() {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [nickname, setNickname] = useState("");
   const [message, setMessage] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
@@ -59,6 +60,11 @@ export function AuthControls() {
       return;
     }
 
+    if (mode === "sign-up" && password !== passwordConfirm) {
+      setMessage("비밀번호 확인이 일치하지 않습니다.");
+      return;
+    }
+
     setIsLoading(true);
     setMessage("");
     setPendingEmail("");
@@ -98,6 +104,7 @@ export function AuthControls() {
     setMessage(mode === "sign-in" ? "로그인했습니다." : "가입했습니다.");
     setEmail("");
     setPassword("");
+    setPasswordConfirm("");
     setNickname("");
     setIsOpen(false);
   };
@@ -187,14 +194,22 @@ export function AuthControls() {
                   <button
                     type="button"
                     className={mode === "sign-in" ? "active" : ""}
-                    onClick={() => setMode("sign-in")}
+                    onClick={() => {
+                      setMode("sign-in");
+                      setMessage("");
+                      setPendingEmail("");
+                    }}
                   >
                     로그인
                   </button>
                   <button
                     type="button"
                     className={mode === "sign-up" ? "active" : ""}
-                    onClick={() => setMode("sign-up")}
+                    onClick={() => {
+                      setMode("sign-up");
+                      setMessage("");
+                      setPendingEmail("");
+                    }}
                   >
                     회원가입
                   </button>
@@ -216,12 +231,21 @@ export function AuthControls() {
                     autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
                   />
                   {mode === "sign-up" && (
-                    <input
-                      value={nickname}
-                      onChange={(event) => setNickname(event.target.value)}
-                      placeholder="닉네임"
-                      autoComplete="nickname"
-                    />
+                    <>
+                      <input
+                        value={passwordConfirm}
+                        onChange={(event) => setPasswordConfirm(event.target.value)}
+                        placeholder="비밀번호 확인"
+                        type="password"
+                        autoComplete="new-password"
+                      />
+                      <input
+                        value={nickname}
+                        onChange={(event) => setNickname(event.target.value)}
+                        placeholder="닉네임"
+                        autoComplete="nickname"
+                      />
+                    </>
                   )}
                   <button
                     type="button"

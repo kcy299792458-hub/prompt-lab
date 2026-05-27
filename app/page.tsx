@@ -270,9 +270,8 @@ export default function Home() {
             (promptCounts[prompt.id]?.saves ?? 0) +
             (promptCounts[prompt.id]?.comments ?? 0),
         }))
-        .filter((item) => item.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5),
+        .sort((a, b) => b.score - a.score || b.prompt.id - a.prompt.id)
+        .slice(0, 8),
     [promptCounts],
   );
 
@@ -392,17 +391,13 @@ export default function Home() {
             <span>랭킹</span>
           </div>
           <ol>
-            {popularPrompts.length > 0 ? (
-              popularPrompts.map(({ prompt, score }, index) => (
-                <li key={prompt.id}>
-                  <span className="dc-rank-num">{index + 1}</span>
-                  <Link href={`/prompts/${prompt.id}`}>{prompt.title}</Link>
-                  <small>{score}</small>
-                </li>
-              ))
-            ) : (
-              <li className="dc-rank-empty">아직 반응이 없습니다</li>
-            )}
+            {popularPrompts.map(({ prompt, score }, index) => (
+              <li key={prompt.id}>
+                <span className="dc-rank-num">{index + 1}</span>
+                <Link href={`/prompts/${prompt.id}`}>{prompt.title}</Link>
+                <small>{score > 0 ? score : "0"}</small>
+              </li>
+            ))}
           </ol>
         </aside>
 
