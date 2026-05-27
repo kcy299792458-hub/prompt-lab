@@ -18,6 +18,7 @@ export function AuthControls() {
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
   const [message, setMessage] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -60,7 +61,10 @@ export function AuthControls() {
 
     setIsLoading(true);
     setMessage("");
+    setPendingEmail("");
 
+    const emailRedirectTo =
+      typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
     const result =
       mode === "sign-in"
         ? await supabase.auth.signInWithPassword({
@@ -71,6 +75,7 @@ export function AuthControls() {
             email: trimmedEmail,
             password,
             options: {
+              emailRedirectTo,
               data: {
                 nickname: trimmedNickname || trimmedEmail.split("@")[0],
               },
@@ -85,6 +90,7 @@ export function AuthControls() {
     }
 
     if (mode === "sign-up" && !result.data.session) {
+      setPendingEmail(trimmedEmail);
       setMessage("가입 확인 메일을 보냈습니다. 메일 인증 후 로그인하세요.");
       return;
     }
@@ -94,6 +100,31 @@ export function AuthControls() {
     setPassword("");
     setNickname("");
     setIsOpen(false);
+  };
+
+  const resendConfirmation = async () => {
+    if (!supabase || !pendingEmail) return;
+
+    setIsLoading(true);
+    setMessage("");
+
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: pendingEmail,
+      options: {
+        emailRedirectTo:
+          typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined,
+      },
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("인증 메일을 다시 보냈습니다. 스팸함도 확인하세요.");
   };
 
   const logout = async () => {
@@ -203,6 +234,16 @@ export function AuthControls() {
                 </div>
 
                 {message && <p className="auth-message">{message}</p>}
+                {pendingEmail && mode === "sign-up" && (
+                  <button
+                    type="button"
+                    className="secondary-button auth-resend-button"
+                    onClick={resendConfirmation}
+                    disabled={isLoading}
+                  >
+                    인증 메일 다시 보내기
+                  </button>
+                )}
               </>
             )}
           </section>

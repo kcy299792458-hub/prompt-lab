@@ -2383,6 +2383,37 @@ body,
   margin: 10px 0 0;
 }
 
+.auth-resend-button {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.auth-callback-shell {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.auth-callback-panel {
+  background: #ffffff;
+  border-color: #d6d9d0;
+}
+
+.auth-callback-panel h1 {
+  color: #20231f;
+}
+
+.auth-callback-panel p {
+  color: #5d655e;
+}
+
+.auth-callback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
 .guest-note strong {
   align-items: center;
   display: inline-flex;
