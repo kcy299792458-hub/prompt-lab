@@ -9,7 +9,6 @@ import {
   Check,
   Copy,
   Heart,
-  Image as ImageIcon,
   MessageCircle,
   UserRound,
 } from "lucide-react";
@@ -54,7 +53,7 @@ export default function PromptDetailPage() {
       <header className="topbar">
         <Link className="brand" href="/">
           <span className="brand-mark">
-            <ImageIcon size={19} aria-hidden="true" />
+            <img className="brand-logo" src="/logo.png" alt="" />
           </span>
           <span>
             <strong>프롬프트랩</strong>

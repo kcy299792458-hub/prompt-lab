@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   Eye,
   Heart,
-  Image as ImageIcon,
   MessageCircle,
   Trash2,
   UserRound,
@@ -285,10 +284,10 @@ export default function BoardPostPage() {
       <header className="topbar dc-topbar">
         <Link className="brand dc-brand" href="/">
           <span className="brand-mark">
-            <ImageIcon size={18} aria-hidden="true" />
+            <img className="brand-logo" src="/logo.png" alt="" />
           </span>
           <span>
-            <strong>프롬포트랩</strong>
+            <strong>프롬프트랩</strong>
             <small>글 게시판</small>
           </span>
         </Link>
