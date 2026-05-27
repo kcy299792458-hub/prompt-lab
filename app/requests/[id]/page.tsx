@@ -283,12 +283,18 @@ export default function PromptRequestDetailPage() {
         <nav className="topnav dc-topnav" aria-label="주요 메뉴">
           <Link href="/">이미지</Link>
           <Link href="/boards">게시판</Link>
-          <Link href="/requests">요청</Link>
           <Link href="/saved">저장함</Link>
           <Link href="/upload">업로드</Link>
           <AuthControls />
         </nav>
       </header>
+
+      <nav className="community-board-tabs" aria-label="게시판 종류">
+        <Link href="/boards">일반 게시판</Link>
+        <Link className="active" href="/requests">
+          프롬프트 요청
+        </Link>
+      </nav>
 
       <section className="board-detail-page dc-board-detail-page">
         <Link href="/requests" className="back-link dc-back-link">

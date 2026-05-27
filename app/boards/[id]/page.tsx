@@ -308,7 +308,6 @@ export default function BoardPostPage() {
         <nav className="topnav dc-topnav" aria-label="주요 메뉴">
           <Link href="/">이미지</Link>
           <Link href="/boards">게시판</Link>
-          <Link href="/requests">요청</Link>
           <Link href="/saved">저장함</Link>
           <Link href="/upload">업로드</Link>
           <AuthControls />
