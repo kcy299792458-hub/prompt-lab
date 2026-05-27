@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://prompt-lab.vercel.app"),
+  metadataBase: new URL("https://prompt-lab-drab-xi.vercel.app"),
   title: {
     default: "프롬포트랩 - 이미지 프롬프트 커뮤니티",
     template: "%s | 프롬포트랩",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "프롬포트랩",
     description: "결과로 검증된 이미지 프롬포트 모음",
-    url: "https://prompt-lab.vercel.app",
+    url: "https://prompt-lab-drab-xi.vercel.app",
     siteName: "프롬포트랩",
     locale: "ko_KR",
     type: "website",

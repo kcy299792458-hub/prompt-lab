@@ -9,8 +9,8 @@
 - 기본 브랜치: `main`
 - GitHub 업로드 완료
 - GitHub 저장소: `https://github.com/kcy299792458-hub/prompt-lab`
-- Vercel 새 프로젝트 화면을 열어둔 상태
-- 아직 Vercel 배포 완료 주소는 확인 전
+- Vercel 배포 완료
+- 공개 주소: `https://prompt-lab-drab-xi.vercel.app`
 
 ## 지금까지 한 일
 
@@ -26,12 +26,9 @@
 
 ## 다음에 바로 할 일
 
-1. Vercel에 로그인한다.
-2. `prompt-lab` GitHub 저장소를 Import한다.
-3. Framework가 `Next.js`인지 확인한다.
-4. `Deploy`를 누른다.
-5. 배포가 끝나면 Vercel 주소를 확인한다.
-6. 배포 주소를 공유하고 사이트가 정상 작동하는지 확인한다.
+1. 공개 주소 `https://prompt-lab-drab-xi.vercel.app`를 열어본다.
+2. 홈, 게시판, 상세 페이지가 정상인지 확인한다.
+3. 다음 개발 단계로 Supabase 실제 로그인/글쓰기/댓글 저장을 붙인다.
 
 ## Vercel 설정값
 
@@ -50,7 +47,7 @@ Output Directory: 비워둠
 - `app/robots.ts`
 - `app/sitemap.ts`
 
-위 파일 안의 임시 주소 `https://prompt-lab.vercel.app`를 실제 Vercel 배포 주소로 바꾼다.
+위 파일 안의 주소는 현재 `https://prompt-lab-drab-xi.vercel.app`로 맞춰져 있다.
 
 ## 다음 개발 단계
 

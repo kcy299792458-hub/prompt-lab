@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const siteUrl = "https://prompt-lab.vercel.app";
+const siteUrl = "https://prompt-lab-drab-xi.vercel.app";
 
 export default function robots(): MetadataRoute.Robots {
   return {
