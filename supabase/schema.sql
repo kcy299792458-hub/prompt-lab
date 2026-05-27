@@ -1,4 +1,4 @@
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 create type public.user_role as enum ('user', 'admin');
 create type public.post_kind as enum ('image', 'board');
@@ -334,7 +334,7 @@ begin
     trim(p_title),
     trim(p_body),
     clean_nickname,
-    crypt(p_password, gen_salt('bf'))
+    extensions.crypt(p_password, extensions.gen_salt('bf'))
   )
   returning id into new_post_id;
 
@@ -377,7 +377,7 @@ begin
     p_board_post_id,
     trim(p_body),
     clean_nickname,
-    crypt(p_password, gen_salt('bf'))
+    extensions.crypt(p_password, extensions.gen_salt('bf'))
   )
   returning id into new_comment_id;
 
@@ -414,7 +414,7 @@ begin
     raise exception '수정할 게시글을 찾을 수 없습니다.';
   end if;
 
-  if matched_post.guest_password_hash is null or matched_post.guest_password_hash <> crypt(p_password, matched_post.guest_password_hash) then
+  if matched_post.guest_password_hash is null or matched_post.guest_password_hash <> extensions.crypt(p_password, matched_post.guest_password_hash) then
     raise exception '비밀번호가 맞지 않습니다.';
   end if;
 
@@ -451,7 +451,7 @@ begin
     raise exception '삭제할 게시글을 찾을 수 없습니다.';
   end if;
 
-  if matched_post.guest_password_hash is null or matched_post.guest_password_hash <> crypt(p_password, matched_post.guest_password_hash) then
+  if matched_post.guest_password_hash is null or matched_post.guest_password_hash <> extensions.crypt(p_password, matched_post.guest_password_hash) then
     raise exception '비밀번호가 맞지 않습니다.';
   end if;
 
@@ -484,7 +484,7 @@ begin
     raise exception '삭제할 댓글을 찾을 수 없습니다.';
   end if;
 
-  if matched_comment.guest_password_hash is null or matched_comment.guest_password_hash <> crypt(p_password, matched_comment.guest_password_hash) then
+  if matched_comment.guest_password_hash is null or matched_comment.guest_password_hash <> extensions.crypt(p_password, matched_comment.guest_password_hash) then
     raise exception '비밀번호가 맞지 않습니다.';
   end if;
 
