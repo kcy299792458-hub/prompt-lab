@@ -3,57 +3,21 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Bookmark,
   Camera,
-  Clock,
-  Eye,
-  Flame,
-  Heart,
-  MessageCircle,
+  FileText,
+  Layers,
   Search,
   Upload,
 } from "lucide-react";
-import { getCommentCount } from "@/data/community";
 import { categories, prompts } from "@/data/prompts";
 import { AuthControls } from "@/app/components/AuthControls";
 
-type FeedTab = "all" | "popular" | "today" | "notice";
-
-function getPromptAge(id: number) {
-  if (id >= 25) return "방금";
-  if (id >= 19) return "오늘";
-  return `${id}일 전`;
-}
+type FeedTab = "all" | "korean" | "english" | "mixed";
 
 export default function Home() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("전체");
   const [feedTab, setFeedTab] = useState<FeedTab>("all");
-
-  const todayPrompts = useMemo(() => prompts.filter((prompt) => prompt.id >= 19), []);
-
-  const savedPromptCount = useMemo(
-    () => prompts.reduce((total, prompt) => total + prompt.saves, 0),
-    [],
-  );
-
-  const realTimeRank = useMemo(
-    () =>
-      [...prompts]
-        .sort((a, b) => b.likes + b.saves + getCommentCount(b) * 45 - (a.likes + a.saves + getCommentCount(a) * 45))
-        .slice(0, 8),
-    [],
-  );
-
-  const saveRank = useMemo(
-    () => [...prompts].sort((a, b) => b.saves - a.saves).slice(0, 8),
-    [],
-  );
-
-  const commentRank = useMemo(
-    () => [...prompts].sort((a, b) => getCommentCount(b) - getCommentCount(a)).slice(0, 8),
-    [],
-  );
 
   const filteredPrompts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -62,9 +26,14 @@ export default function Home() {
       const matchesCategory = category === "전체" || prompt.category === category;
       const matchesTab =
         feedTab === "all" ||
-        (feedTab === "popular" && prompt.likes + prompt.saves >= 520) ||
-        (feedTab === "today" && prompt.id >= 19) ||
-        (feedTab === "notice" && prompt.id <= 2);
+        (feedTab === "korean" &&
+          (prompt.language === "한국어" ||
+            prompt.language === "한영 혼합" ||
+            prompt.promptVersions?.some((version) => version.language === "한국어"))) ||
+        (feedTab === "english" &&
+          (prompt.language === "영어" ||
+            prompt.promptVersions?.some((version) => version.language === "영어"))) ||
+        (feedTab === "mixed" && prompt.language === "한영 혼합");
       const searchableText = [
         prompt.title,
         prompt.description,
@@ -82,18 +51,8 @@ export default function Home() {
       return matchesCategory && matchesTab && searchableText.includes(normalizedQuery);
     });
 
-    return [...filtered].sort((a, b) => {
-      if (feedTab === "all" || feedTab === "today") return b.id - a.id;
-      if (feedTab === "notice") return a.id - b.id;
-      return b.likes + b.saves - (a.likes + a.saves);
-    });
+    return [...filtered].sort((a, b) => b.id - a.id);
   }, [category, feedTab, query]);
-
-  const rankColumns = [
-    { title: "실시간 인기", items: realTimeRank, metric: (prompt: (typeof prompts)[number]) => `${prompt.likes + prompt.saves}` },
-    { title: "최다 저장", items: saveRank, metric: (prompt: (typeof prompts)[number]) => `${prompt.saves}` },
-    { title: "댓글 많은 글", items: commentRank, metric: (prompt: (typeof prompts)[number]) => `${getCommentCount(prompt)}` },
-  ];
 
   return (
     <main className="site-shell dc-shell">
@@ -135,38 +94,18 @@ export default function Home() {
         <div>
           <Camera size={17} aria-hidden="true" />
           <strong>{prompts.length}</strong>
-          <span>전체 이미지</span>
+          <span>예시 이미지</span>
         </div>
         <div>
-          <Clock size={17} aria-hidden="true" />
-          <strong>{todayPrompts.length}</strong>
-          <span>오늘 올라온 이미지</span>
+          <Layers size={17} aria-hidden="true" />
+          <strong>{categories.length - 1}</strong>
+          <span>카테고리</span>
         </div>
         <div>
-          <Bookmark size={17} aria-hidden="true" />
-          <strong>{savedPromptCount.toLocaleString()}</strong>
-          <span>저장된 프롬포트</span>
+          <FileText size={17} aria-hidden="true" />
+          <strong>포함</strong>
+          <span>원문과 모델 정보</span>
         </div>
-      </section>
-
-      <section className="dc-rank-grid" aria-label="인기 게시글">
-        {rankColumns.map((column) => (
-          <article key={column.title} className="dc-rank-box">
-            <div className="dc-rank-head">
-              <strong>{column.title}</strong>
-              <span>TOP 8</span>
-            </div>
-            <ol>
-              {column.items.map((prompt, index) => (
-                <li key={prompt.id}>
-                  <span className="dc-rank-num">{index + 1}</span>
-                  <Link href={`/prompts/${prompt.id}`}>{prompt.title}</Link>
-                  <small>{column.metric(prompt)}</small>
-                </li>
-              ))}
-            </ol>
-          </article>
-        ))}
       </section>
 
       <section id="gallery" className="dc-board-layout">
@@ -210,24 +149,24 @@ export default function Home() {
               </button>
               <button
                 type="button"
-                className={feedTab === "popular" ? "active" : ""}
-                onClick={() => setFeedTab("popular")}
+                className={feedTab === "korean" ? "active" : ""}
+                onClick={() => setFeedTab("korean")}
               >
-                인기글
+                한국어 포함
               </button>
               <button
                 type="button"
-                className={feedTab === "today" ? "active" : ""}
-                onClick={() => setFeedTab("today")}
+                className={feedTab === "english" ? "active" : ""}
+                onClick={() => setFeedTab("english")}
               >
-                오늘 업로드
+                영어 원문
               </button>
               <button
                 type="button"
-                className={feedTab === "notice" ? "active" : ""}
-                onClick={() => setFeedTab("notice")}
+                className={feedTab === "mixed" ? "active" : ""}
+                onClick={() => setFeedTab("mixed")}
               >
-                공지
+                한영 혼합
               </button>
             </div>
           </div>
@@ -236,7 +175,6 @@ export default function Home() {
             <span>이미지</span>
             <span>제목</span>
             <span>모델</span>
-            <span>반응</span>
           </div>
 
           <div className="gallery-grid dc-gallery-grid">
@@ -251,23 +189,9 @@ export default function Home() {
                   <h3>{prompt.title}</h3>
                   <p>{prompt.description}</p>
                   <div className="dc-card-info">
-                    <span>@{prompt.author}</span>
                     <span>{prompt.model}</span>
-                    <span>{getPromptAge(prompt.id)}</span>
-                  </div>
-                  <div className="card-reactions">
-                    <span>
-                      <Heart size={14} aria-hidden="true" /> {prompt.likes}
-                    </span>
-                    <span>
-                      <Bookmark size={14} aria-hidden="true" /> {prompt.saves}
-                    </span>
-                    <span>
-                      <MessageCircle size={14} aria-hidden="true" /> {getCommentCount(prompt)}
-                    </span>
-                    <span>
-                      <Eye size={14} aria-hidden="true" /> {prompt.likes + prompt.saves}
-                    </span>
+                    <span>{prompt.language}</span>
+                    <span>{prompt.style}</span>
                   </div>
                 </div>
               </Link>

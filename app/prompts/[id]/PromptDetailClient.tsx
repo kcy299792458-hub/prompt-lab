@@ -5,15 +5,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
-  Bookmark,
   Check,
   Copy,
-  Heart,
-  MessageCircle,
-  UserRound,
 } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
-import { getComments, getPromptVersions } from "@/data/community";
+import { getPromptVersions } from "@/data/community";
 import { prompts } from "@/data/prompts";
 
 export default function PromptDetailPage() {
@@ -40,7 +36,6 @@ export default function PromptDetailPage() {
   }
 
   const promptVersions = getPromptVersions(prompt);
-  const comments = getComments(prompt);
 
   const copyPrompt = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text);
@@ -90,20 +85,6 @@ export default function PromptDetailPage() {
               </div>
               <h1>{prompt.title}</h1>
               <p>{prompt.description}</p>
-              <div className="detail-actions">
-                <button className="icon-action wide" type="button">
-                  <Heart size={18} aria-hidden="true" />
-                  좋아요 {prompt.likes}
-                </button>
-                <button className="icon-action wide" type="button">
-                  <Bookmark size={18} aria-hidden="true" />
-                  저장 {prompt.saves}
-                </button>
-                <button className="icon-action wide" type="button">
-                  <MessageCircle size={18} aria-hidden="true" />
-                  댓글 {comments.length}
-                </button>
-              </div>
             </div>
           </article>
 
@@ -142,37 +123,9 @@ export default function PromptDetailPage() {
             </div>
           </section>
 
-          <section className="prompt-detail-section">
-            <div className="section-heading">
-              <h2>댓글</h2>
-              <span>{comments.length}개</span>
-            </div>
-            <div className="comment-list full">
-              {comments.length > 0 ? (
-                comments.map((comment) => (
-                  <article key={`${comment.author}-${comment.time}`}>
-                    <div>
-                      <strong>@{comment.author}</strong>
-                      <span>{comment.time}</span>
-                    </div>
-                    <p>{comment.body}</p>
-                  </article>
-                ))
-              ) : (
-                <p>아직 댓글이 없습니다. 첫 의견을 남겨보세요.</p>
-              )}
-            </div>
-          </section>
         </div>
 
         <aside className="detail-side">
-          <div className="uploader-card">
-            <div>
-              <UserRound size={18} aria-hidden="true" />
-              <strong>@{prompt.author}</strong>
-            </div>
-            <span>{prompt.likes + prompt.saves} 반응</span>
-          </div>
           <div className="spec-grid">
             <span>모델</span>
             <strong>{prompt.model}</strong>

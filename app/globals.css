@@ -296,7 +296,7 @@
   color: #555;
   display: grid;
   font-size: 12px;
-  grid-template-columns: 120px minmax(0, 1fr) 120px 150px;
+  grid-template-columns: 120px minmax(0, 1fr) 160px;
   min-height: 31px;
 }
 
@@ -454,7 +454,7 @@
   color: #555;
   display: grid;
   font-size: 12px;
-  grid-template-columns: 72px minmax(0, 1fr) 100px 64px 64px 64px;
+  grid-template-columns: 72px minmax(0, 1fr) 100px 64px;
   min-height: 31px;
 }
 
@@ -482,7 +482,7 @@
   border-radius: 0;
   display: grid;
   gap: 0;
-  grid-template-columns: 72px minmax(0, 1fr) 100px 64px 64px 64px;
+  grid-template-columns: 72px minmax(0, 1fr) 100px 64px;
   min-height: 42px;
   padding: 0;
 }

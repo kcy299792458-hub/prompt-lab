@@ -17,9 +17,6 @@ export type Prompt = {
   language: "영어" | "한국어" | "한영 혼합";
   image: string;
   tags: string[];
-  author: string;
-  likes: number;
-  saves: number;
 };
 
 export const categories = [
@@ -58,9 +55,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/neon-astronaut.png",
     tags: ["네온", "시네마틱", "포토리얼"],
-    author: "visual_archivist",
-    likes: 428,
-    saves: 112,
   },
   {
     id: 2,
@@ -74,9 +68,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/silver-fashion.png",
     tags: ["패션", "인물", "화보"],
-    author: "studio_prompt",
-    likes: 391,
-    saves: 98,
   },
   {
     id: 3,
@@ -90,9 +81,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/greenhouse-cafe.png",
     tags: ["3D", "카페", "미니어처"],
-    author: "tiny_worlds",
-    likes: 512,
-    saves: 156,
   },
   {
     id: 4,
@@ -106,9 +94,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/seoul-night-market.png",
     tags: ["야시장", "거리사진", "반사광"],
-    author: "k_scene",
-    likes: 344,
-    saves: 87,
   },
   {
     id: 5,
@@ -122,9 +107,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/hanok-reading-room.png",
     tags: ["인테리어", "한옥", "공간"],
-    author: "space_prompt",
-    likes: 286,
-    saves: 74,
   },
   {
     id: 6,
@@ -138,9 +120,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/skincare-serum.png",
     tags: ["화장품", "제품사진", "광고"],
-    author: "ad_prompt",
-    likes: 463,
-    saves: 132,
   },
   {
     id: 7,
@@ -154,9 +133,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/webtoon-mage.png",
     tags: ["웹툰", "캐릭터", "판타지"],
-    author: "toon_maker",
-    likes: 529,
-    saves: 148,
   },
   {
     id: 8,
@@ -170,9 +146,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/silver-fashion.png",
     tags: ["필름", "플래시", "스냅"],
-    author: "film_room",
-    likes: 274,
-    saves: 69,
   },
   {
     id: 9,
@@ -198,9 +171,6 @@ export const prompts: Prompt[] = [
     language: "한국어",
     image: "/samples/y2k-collage.png",
     tags: ["Y2K", "콜라주", "룩북"],
-    author: "edit_note",
-    likes: 331,
-    saves: 101,
   },
   {
     id: 10,
@@ -214,9 +184,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/gacha-result.png",
     tags: ["가챠", "게임UI", "편집"],
-    author: "gacha_lab",
-    likes: 418,
-    saves: 139,
   },
   {
     id: 11,
@@ -230,9 +197,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/skincare-serum.png",
     tags: ["주얼리", "럭셔리", "렌더"],
-    author: "product_view",
-    likes: 362,
-    saves: 93,
   },
   {
     id: 12,
@@ -246,9 +210,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/skincare-serum.png",
     tags: ["향수", "빈티지", "광고"],
-    author: "ad_prompt",
-    likes: 249,
-    saves: 62,
   },
   {
     id: 13,
@@ -262,9 +223,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/silver-fashion.png",
     tags: ["아이돌", "티저", "인물"],
-    author: "concept_maker",
-    likes: 587,
-    saves: 177,
   },
   {
     id: 14,
@@ -278,9 +236,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/seoul-night-market.png",
     tags: ["도시", "야경", "배경"],
-    author: "world_bg",
-    likes: 411,
-    saves: 128,
   },
   {
     id: 15,
@@ -294,9 +249,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/rainy-bus-stop.png",
     tags: ["비", "로파이", "감성"],
-    author: "mood_archive",
-    likes: 378,
-    saves: 119,
   },
   {
     id: 16,
@@ -310,9 +262,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/rpg-item-icon.png",
     tags: ["판타지", "도서관", "배경"],
-    author: "world_bg",
-    likes: 436,
-    saves: 144,
   },
   {
     id: 17,
@@ -326,9 +275,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/greenhouse-cafe.png",
     tags: ["마스코트", "3D", "굿즈"],
-    author: "toy_render",
-    likes: 292,
-    saves: 88,
   },
   {
     id: 18,
@@ -342,9 +288,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/silver-fashion.png",
     tags: ["스트릿", "룩북", "패션"],
-    author: "fit_archive",
-    likes: 353,
-    saves: 95,
   },
   {
     id: 19,
@@ -358,9 +301,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/seoul-night-market.png",
     tags: ["음식", "네온", "광고"],
-    author: "food_ad",
-    likes: 325,
-    saves: 81,
   },
   {
     id: 20,
@@ -374,9 +314,6 @@ export const prompts: Prompt[] = [
     language: "한국어",
     image: "/samples/webtoon-mage.png",
     tags: ["잡지", "표지", "편집"],
-    author: "edit_note",
-    likes: 473,
-    saves: 153,
   },
   {
     id: 21,
@@ -390,9 +327,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/silver-fashion.png",
     tags: ["수중", "화보", "몽환"],
-    author: "studio_prompt",
-    likes: 301,
-    saves: 77,
   },
   {
     id: 22,
@@ -406,9 +340,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/greenhouse-cafe.png",
     tags: ["클레이", "방", "미니어처"],
-    author: "tiny_worlds",
-    likes: 267,
-    saves: 73,
   },
   {
     id: 23,
@@ -422,9 +353,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/hanok-reading-room.png",
     tags: ["판타지", "성", "게임배경"],
-    author: "world_bg",
-    likes: 389,
-    saves: 126,
   },
   {
     id: 24,
@@ -438,9 +366,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/dessert-cafe.png",
     tags: ["테크", "제품", "랜딩"],
-    author: "product_view",
-    likes: 318,
-    saves: 84,
   },
   {
     id: 25,
@@ -454,9 +379,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/webtoon-mage.png",
     tags: ["애니", "청춘", "키비주얼"],
-    author: "toon_maker",
-    likes: 502,
-    saves: 162,
   },
   {
     id: 26,
@@ -470,9 +392,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/silver-fashion.png",
     tags: ["프로필", "인물", "스튜디오"],
-    author: "profile_lab",
-    likes: 612,
-    saves: 203,
   },
   {
     id: 27,
@@ -486,9 +405,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/greenhouse-cafe.png",
     tags: ["게임", "아이콘", "아이템"],
-    author: "game_asset",
-    likes: 355,
-    saves: 111,
   },
   {
     id: 28,
@@ -502,9 +418,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/neon-astronaut.png",
     tags: ["뮤비", "조명", "시네마틱"],
-    author: "mv_frame",
-    likes: 441,
-    saves: 137,
   },
   {
     id: 29,
@@ -518,9 +431,6 @@ export const prompts: Prompt[] = [
     language: "영어",
     image: "/samples/skincare-serum.png",
     tags: ["디저트", "음식사진", "카페"],
-    author: "food_ad",
-    likes: 284,
-    saves: 79,
   },
   {
     id: 30,
@@ -534,8 +444,94 @@ export const prompts: Prompt[] = [
     language: "한영 혼합",
     image: "/samples/webtoon-mage.png",
     tags: ["태그", "네거티브", "캐릭터"],
-    author: "tag_note",
-    likes: 657,
-    saves: 244,
+  },
+  {
+    id: 31,
+    title: "QR 코드가 숨어 있는 건축 렌더",
+    description: "ControlNet tile_resample로 QR 코드를 고급 주택 렌더 안에 숨긴 인기 워크플로우.",
+    body: `A photo-realistic rendering of a 2 story house with greenery, pool, (Botanical:1.5), (Photorealistic:1.3), (Highly detailed:1.2), (Natural light:1.2), art inspired by Architectural Digest, Vogue Living, and Elle Decor, <lora:epiNoiseoffset_v2:1>
+
+Negative prompt: bad_pictures, (bad_prompt_version2:0.8), EasyNegative, 3d, cartoon, anime, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale))
+
+Workflow notes: img2img with QR code image, denoising strength 1, ControlNet tile_resample, model control_v11f1e_sd15_tile, control weight 0.9, pixel perfect true.`,
+    promptVersions: [
+      {
+        label: "원문/워크플로우",
+        language: "영어",
+        body: `A photo-realistic rendering of a 2 story house with greenery, pool, (Botanical:1.5), (Photorealistic:1.3), (Highly detailed:1.2), (Natural light:1.2), art inspired by Architectural Digest, Vogue Living, and Elle Decor, <lora:epiNoiseoffset_v2:1>
+
+Negative prompt: bad_pictures, (bad_prompt_version2:0.8), EasyNegative, 3d, cartoon, anime, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale))
+
+Steps: 20, Sampler: Euler a, CFG scale: 7, Seed: 2443712455, Size: 768x768, Model: revAnimated_v122, Denoising strength: 1, ControlNet tile_resample weight 0.9.`,
+      },
+      {
+        label: "출처",
+        language: "한영 혼합",
+        body: "Reddit r/StableDiffusion: https://www.reddit.com/r/StableDiffusion/comments/1436nqv/my_attempt_on_qr_code/",
+      },
+    ],
+    category: "3D/공간",
+    model: "Stable Diffusion + ControlNet",
+    aspectRatio: "1:1",
+    style: "Hidden QR / Architecture",
+    language: "영어",
+    image: "https://i.redd.it/8j3vz9j0vj4b1.png",
+    tags: ["QR", "ControlNet", "건축", "워크플로우"],
+  },
+  {
+    id: 32,
+    title: "바이킹 롱하우스 시대 셀피",
+    description: "역사 속 인물들이 전면 카메라 셀피를 찍는다는 설정의 Midjourney 프롬프트.",
+    body: `A group of male Norse, Dane, and Vikings huddled together and is taking a group selfie picture together in 793 CE. They are drinking ale at a feast in a Viking longhouse. They are all wearing traditional Viking armor and helmets. Everyone smiling directly at the camera. The image is photorealistic, has natural lighting, and is taken with a front-facing phone selfie camera by one of the Vikings. --ar 3:2 --s 1000 --no phone --v 5 --q 2`,
+    promptVersions: [
+      {
+        label: "원문",
+        language: "영어",
+        body: `A group of male Norse, Dane, and Vikings huddled together and is taking a group selfie picture together in 793 CE. They are drinking ale at a feast in a Viking longhouse. They are all wearing traditional Viking armor and helmets. Everyone smiling directly at the camera. The image is photorealistic, has natural lighting, and is taken with a front-facing phone selfie camera by one of the Vikings. --ar 3:2 --s 1000 --no phone --v 5 --q 2`,
+      },
+      {
+        label: "출처",
+        language: "한영 혼합",
+        body: "Reddit r/midjourney: https://www.reddit.com/r/midjourney/comments/11vuvdk/time_period_selfies_time_traveler_shows_soldiers/",
+      },
+    ],
+    category: "사진/시네마틱",
+    model: "Midjourney v5",
+    aspectRatio: "3:2",
+    style: "Historical Selfie",
+    language: "영어",
+    image: "https://preview.redd.it/hj9f60entqoa1.png?width=1344&format=png&auto=webp&s=825bb4788696f05720a8d21787e4a02b56dacb22",
+    tags: ["셀피", "역사", "바이킹", "포토리얼"],
+  },
+  {
+    id: 33,
+    title: "2000년대 폰카처럼 일부러 못 찍은 사진",
+    description: "AI 이미지가 너무 완벽해 보이는 문제를 거꾸로 이용해 저품질 폰카 질감을 만들려는 실험형 프롬프트.",
+    body: `(candid poorly lit poorly exposed poorly composed low-quality vacation closeup photo in phst artstyle) (with natural lighting and dynamic angles) (that has been poorly shot with a iphone 6 nokia 6600 cell phone camera) by an amateur storm thorgerson) (and uploaded to facebook on 17.05.2012) (and that is capturing the moment of a happy 25 years old woman Sarah) (with extremely detailed skin and round eyes with extremely detailed pupils and irises and brown hair) (wearing a white tshirt in a park) (and taking a selfie while looking into the camera) (in spring with a clear blue sky at noon), abcdefghijklmnopqrstuvwxyz
+
+Negative prompt: yellow hue, (professional studio portrait photography), (long neck, exaggerated cartoon caricature with illogical distorted body proportions), (watermark, text), (belt, straps, bag), (model, red carpet, fashion), (fat, asymmetrical), (instagram, facebook, pexels, unsplash, flickr, shutterstock), (shiny, glossy), (vignette, blur, movie scene, render), (teeth, makeup), abcdefghijklmnopqrstuvwxyz0987654321`,
+    promptVersions: [
+      {
+        label: "원문",
+        language: "영어",
+        body: `(candid poorly lit poorly exposed poorly composed low-quality vacation closeup photo in phst artstyle) (with natural lighting and dynamic angles) (that has been poorly shot with a iphone 6 nokia 6600 cell phone camera) by an amateur storm thorgerson) (and uploaded to facebook on 17.05.2012) (and that is capturing the moment of a happy 25 years old woman Sarah) (with extremely detailed skin and round eyes with extremely detailed pupils and irises and brown hair) (wearing a white tshirt in a park) (and taking a selfie while looking into the camera) (in spring with a clear blue sky at noon), abcdefghijklmnopqrstuvwxyz
+
+Negative prompt: yellow hue, (professional studio portrait photography), (long neck, exaggerated cartoon caricature with illogical distorted body proportions), (watermark, text), (belt, straps, bag), (model, red carpet, fashion), (fat, asymmetrical), (instagram, facebook, pexels, unsplash, flickr, shutterstock), (shiny, glossy), (vignette, blur, movie scene, render), (teeth, makeup), abcdefghijklmnopqrstuvwxyz0987654321
+
+Steps: 25, Seed: 83455220128015, Model: sd_xl_base_1.0_0.9vae, Size: 1080x1920, Sampler: DPM++ 2M Karras, CFG scale: 7.5`,
+      },
+      {
+        label: "출처",
+        language: "한영 혼합",
+        body: "Reddit r/StableDiffusion: https://www.reddit.com/r/StableDiffusion/comments/181wanj/day_3_of_me_attempting_to_figure_out_the_most/",
+      },
+    ],
+    category: "사진/시네마틱",
+    model: "SDXL",
+    aspectRatio: "9:16",
+    style: "2000s Phone Camera",
+    language: "영어",
+    image: "https://i.imgur.com/sC6szZBh.jpg",
+    tags: ["폰카", "저화질", "리얼리즘", "SDXL"],
   },
 ];

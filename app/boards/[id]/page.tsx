@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Eye,
-  Heart,
   MessageCircle,
   Trash2,
   UserRound,
@@ -317,12 +315,6 @@ export default function BoardPostPage() {
                 </span>
                 <span>{formatDate(post.created_at)}</span>
                 <span>
-                  <Eye size={14} aria-hidden="true" /> 0
-                </span>
-                <span>
-                  <Heart size={14} aria-hidden="true" /> 0
-                </span>
-                <span>
                   <MessageCircle size={14} aria-hidden="true" /> {comments.length}
                 </span>
               </div>
@@ -389,9 +381,9 @@ export default function BoardPostPage() {
               )}
             </article>
 
-            <aside className="dc-rank-box dc-board-best" aria-label="실시간 베스트">
+            <aside className="dc-rank-box dc-board-best" aria-label="댓글 많은 글">
               <div className="dc-rank-head">
-                <strong>실시간 베스트</strong>
+                <strong>댓글 많은 글</strong>
                 <span>글</span>
               </div>
               <ol>

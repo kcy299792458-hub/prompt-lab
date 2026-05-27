@@ -3,8 +3,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Eye,
-  Heart,
   MessageCircle,
   PencilLine,
   Search,
@@ -337,8 +335,6 @@ export default function BoardsPage() {
               <span>분류</span>
               <span>제목</span>
               <span>작성자</span>
-              <span>조회</span>
-              <span>추천</span>
               <span>댓글</span>
             </div>
 
@@ -359,12 +355,6 @@ export default function BoardsPage() {
                   </div>
                   <small>@{getAuthorName(post)}</small>
                   <span>
-                    <Eye size={13} aria-hidden="true" /> 0
-                  </span>
-                  <span>
-                    <Heart size={13} aria-hidden="true" /> 0
-                  </span>
-                  <span>
                     <MessageCircle size={13} aria-hidden="true" /> {commentCounts[post.id] ?? 0}
                   </span>
                 </Link>
@@ -372,9 +362,9 @@ export default function BoardsPage() {
             </div>
           </section>
 
-          <aside className="dc-rank-box dc-board-best" aria-label="실시간 베스트">
+          <aside className="dc-rank-box dc-board-best" aria-label="댓글 많은 글">
             <div className="dc-rank-head">
-              <strong>실시간 베스트</strong>
+              <strong>댓글 많은 글</strong>
               <span>글</span>
             </div>
             <ol>
