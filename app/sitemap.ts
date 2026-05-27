@@ -19,6 +19,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily",
       priority: 0.8,
     },
+    {
+      url: `${siteUrl}/saved`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    },
     ...prompts.map((prompt) => ({
       url: `${siteUrl}/prompts/${prompt.id}`,
       lastModified: now,

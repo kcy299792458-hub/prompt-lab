@@ -128,6 +128,7 @@ export default function Home() {
         <nav className="topnav dc-topnav" aria-label="주요 메뉴">
           <a href="#gallery">이미지</a>
           <Link href="/boards">게시판</Link>
+          <Link href="/saved">저장함</Link>
           <a href="#submit">등록</a>
           <AuthControls />
         </nav>

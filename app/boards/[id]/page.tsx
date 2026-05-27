@@ -21,6 +21,7 @@ type BoardPostRow = {
   category: string;
   title: string;
   body: string;
+  image_urls?: string[] | null;
   created_at: string;
   is_hidden: boolean;
 };
@@ -84,10 +85,10 @@ export default function BoardPostPage() {
 
     setIsLoading(true);
 
-    const [postResult, commentResult, bestResult] = await Promise.all([
+    const [initialPostResult, commentResult, bestResult] = await Promise.all([
       supabase
         .from("board_posts")
-        .select("id, author_id, guest_nickname, category, title, body, created_at, is_hidden")
+        .select("id, author_id, guest_nickname, category, title, body, image_urls, created_at, is_hidden")
         .eq("id", params.id)
         .eq("is_hidden", false)
         .maybeSingle(),
@@ -105,11 +106,26 @@ export default function BoardPostPage() {
         .limit(8),
     ]);
 
-    if (postResult.error) {
-      setMessage(postResult.error.message);
+    let postData = initialPostResult.data as BoardPostRow | null;
+    let postError = initialPostResult.error;
+
+    if (postError?.message.includes("image_urls")) {
+      const retryResult = await supabase
+        .from("board_posts")
+        .select("id, author_id, guest_nickname, category, title, body, created_at, is_hidden")
+        .eq("id", params.id)
+        .eq("is_hidden", false)
+        .maybeSingle();
+
+      postData = retryResult.data as BoardPostRow | null;
+      postError = retryResult.error;
     }
 
-    const nextPost = (postResult.data as BoardPostRow | null) ?? null;
+    if (postError) {
+      setMessage(postError.message);
+    }
+
+    const nextPost = postData ?? null;
     setPost(nextPost);
     setComments((commentResult.data ?? []) as CommentRow[]);
     setBestPosts((bestResult.data ?? []) as BoardPostRow[]);
@@ -292,6 +308,7 @@ export default function BoardPostPage() {
         <nav className="topnav dc-topnav" aria-label="주요 메뉴">
           <Link href="/">이미지</Link>
           <Link href="/boards">게시판</Link>
+          <Link href="/saved">저장함</Link>
           <AuthControls />
         </nav>
       </header>
@@ -318,7 +335,14 @@ export default function BoardPostPage() {
                   <MessageCircle size={14} aria-hidden="true" /> {comments.length}
                 </span>
               </div>
-              <p>{post.body}</p>
+              {(post.image_urls?.length ?? 0) > 0 && (
+                <div className="dc-board-image-grid">
+                  {post.image_urls?.map((imageUrl, index) => (
+                    <img key={imageUrl} src={imageUrl} alt={`첨부 이미지 ${index + 1}`} />
+                  ))}
+                </div>
+              )}
+              <p className="dc-board-post-body">{post.body}</p>
 
               {!post.author_id && (
                 <div className="dc-owner-tools">

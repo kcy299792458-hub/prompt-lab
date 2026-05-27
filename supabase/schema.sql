@@ -1,5 +1,19 @@
 create extension if not exists pgcrypto with schema extensions;
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'board-images',
+  'board-images',
+  true,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update
+set
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
 create type public.user_role as enum ('user', 'admin');
 create type public.post_kind as enum ('image', 'board');
 create type public.prompt_language as enum ('ko', 'en', 'mixed', 'negative', 'settings');
@@ -77,6 +91,7 @@ create table public.board_posts (
   category text not null,
   title text not null check (char_length(title) between 2 and 100),
   body text not null check (char_length(body) between 1 and 20000),
+  image_urls text[] not null default '{}',
   is_hidden boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -296,12 +311,23 @@ on public.reports for update
 using (public.is_admin())
 with check (public.is_admin());
 
+create policy "board images are readable"
+on storage.objects for select
+to anon, authenticated
+using (bucket_id = 'board-images');
+
+create policy "anyone can upload board images"
+on storage.objects for insert
+to anon, authenticated
+with check (bucket_id = 'board-images');
+
 create or replace function public.create_guest_board_post(
   p_category text,
   p_title text,
   p_body text,
   p_guest_nickname text,
-  p_password text
+  p_password text,
+  p_image_urls text[] default '{}'::text[]
 )
 returns uuid
 language plpgsql
@@ -326,6 +352,7 @@ begin
     category,
     title,
     body,
+    image_urls,
     guest_nickname,
     guest_password_hash
   )
@@ -333,6 +360,7 @@ begin
     trim(p_category),
     trim(p_title),
     trim(p_body),
+    coalesce(p_image_urls, '{}'::text[]),
     clean_nickname,
     extensions.crypt(p_password, extensions.gen_salt('bf'))
   )
@@ -385,7 +413,7 @@ begin
 end;
 $$;
 
-grant execute on function public.create_guest_board_post(text, text, text, text, text) to anon, authenticated;
+grant execute on function public.create_guest_board_post(text, text, text, text, text, text[]) to anon, authenticated;
 grant execute on function public.create_guest_board_comment(uuid, text, text, text) to anon, authenticated;
 
 create or replace function public.update_guest_board_post(
@@ -393,7 +421,8 @@ create or replace function public.update_guest_board_post(
   p_title text,
   p_body text,
   p_category text,
-  p_password text
+  p_password text,
+  p_image_urls text[] default null
 )
 returns void
 language plpgsql
@@ -423,6 +452,7 @@ begin
     title = trim(p_title),
     body = trim(p_body),
     category = trim(p_category),
+    image_urls = coalesce(p_image_urls, image_urls),
     updated_at = now()
   where id = p_board_post_id;
 end;
@@ -494,7 +524,7 @@ begin
 end;
 $$;
 
-grant execute on function public.update_guest_board_post(uuid, text, text, text, text) to anon, authenticated;
+grant execute on function public.update_guest_board_post(uuid, text, text, text, text, text[]) to anon, authenticated;
 grant execute on function public.delete_guest_board_post(uuid, text) to anon, authenticated;
 grant execute on function public.delete_guest_board_comment(uuid, text) to anon, authenticated;
 

@@ -1,11 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  ImagePlus,
   MessageCircle,
   PencilLine,
   Search,
+  X,
 } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import {
@@ -23,6 +25,7 @@ type BoardPostRow = {
   category: string;
   title: string;
   body: string;
+  image_urls?: string[] | null;
   created_at: string;
   is_hidden: boolean;
 };
@@ -56,7 +59,10 @@ export default function BoardsPage() {
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [isWriteOpen, setIsWriteOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [form, setForm] = useState({
     category: "자유",
     title: "",
@@ -76,14 +82,28 @@ export default function BoardsPage() {
 
     setIsLoading(true);
 
-    const [{ data: postData, error: postError }, { data: commentData }] = await Promise.all([
+    const [{ data: commentData }, initialPostResult] = await Promise.all([
+      supabase.from("comments").select("board_post_id").eq("is_hidden", false),
       supabase
+        .from("board_posts")
+        .select("id, author_id, guest_nickname, category, title, body, image_urls, created_at, is_hidden")
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    let postData = initialPostResult.data as BoardPostRow[] | null;
+    let postError = initialPostResult.error;
+
+    if (postError?.message.includes("image_urls")) {
+      const retryResult = await supabase
         .from("board_posts")
         .select("id, author_id, guest_nickname, category, title, body, created_at, is_hidden")
         .eq("is_hidden", false)
-        .order("created_at", { ascending: false }),
-      supabase.from("comments").select("board_post_id").eq("is_hidden", false),
-    ]);
+        .order("created_at", { ascending: false });
+
+      postData = retryResult.data as BoardPostRow[] | null;
+      postError = retryResult.error;
+    }
 
     if (postError) {
       setMessage(postError.message);
@@ -125,6 +145,12 @@ export default function BoardsPage() {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    };
+  }, [imagePreviews]);
+
   const filteredPosts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -147,6 +173,66 @@ export default function BoardsPage() {
     [commentCounts, posts],
   );
 
+  const resetImages = () => {
+    imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setImageFiles([]);
+    setImagePreviews([]);
+  };
+
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const imageOnlyFiles = selectedFiles.filter((file) => file.type.startsWith("image/"));
+    const oversizedFile = imageOnlyFiles.find((file) => file.size > 5 * 1024 * 1024);
+
+    if (oversizedFile) {
+      setMessage("사진은 1장당 5MB 이하만 첨부할 수 있습니다.");
+      event.target.value = "";
+      return;
+    }
+
+    const nextFiles = imageOnlyFiles.slice(0, 3);
+    resetImages();
+    setImageFiles(nextFiles);
+    setImagePreviews(nextFiles.map((file) => URL.createObjectURL(file)));
+    event.target.value = "";
+  };
+
+  const removeImage = (index: number) => {
+    URL.revokeObjectURL(imagePreviews[index]);
+    setImageFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setImagePreviews((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const uploadBoardImages = async () => {
+    if (!supabase || imageFiles.length === 0) return [];
+
+    const uploadedUrls: string[] = [];
+
+    for (const file of imageFiles) {
+      const extension = file.name.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "") || "jpg";
+      const uniqueId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const path = `board/${new Date().toISOString().slice(0, 10)}/${uniqueId}.${extension}`;
+
+      const { data, error } = await supabase.storage.from("board-images").upload(path, file, {
+        cacheControl: "31536000",
+        contentType: file.type,
+        upsert: false,
+      });
+
+      if (error) {
+        throw new Error("사진 첨부 기능을 사용하려면 005 SQL 실행이 필요합니다.");
+      }
+
+      const { data: publicData } = supabase.storage.from("board-images").getPublicUrl(data.path);
+      uploadedUrls.push(publicData.publicUrl);
+    }
+
+    return uploadedUrls;
+  };
+
   const submitPost = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -160,33 +246,82 @@ export default function BoardsPage() {
       return;
     }
 
+    if (!sessionUser && form.guestNickname.trim().length < 2) {
+      setMessage("닉네임은 2자 이상이어야 합니다.");
+      return;
+    }
+
+    if (!sessionUser && form.password.length < 4) {
+      setMessage("비밀번호는 4자 이상이어야 합니다.");
+      return;
+    }
+
     setMessage("");
+    setIsSubmitting(true);
 
-    if (sessionUser) {
-      const { error } = await supabase.from("board_posts").insert({
-        author_id: sessionUser.id,
-        category: form.category,
-        title: form.title.trim(),
-        body: form.body.trim(),
-      });
+    try {
+      const imageUrls = await uploadBoardImages();
 
-      if (error) {
-        setMessage(error.message);
-        return;
+      if (sessionUser) {
+        const insertPayload: {
+          author_id: string;
+          category: string;
+          title: string;
+          body: string;
+          image_urls?: string[];
+        } = {
+          author_id: sessionUser.id,
+          category: form.category,
+          title: form.title.trim(),
+          body: form.body.trim(),
+        };
+
+        if (imageUrls.length > 0) {
+          insertPayload.image_urls = imageUrls;
+        }
+
+        const { error } = await supabase.from("board_posts").insert(insertPayload);
+
+        if (error) {
+          setMessage(error.message);
+          return;
+        }
+      } else {
+        const rpcPayload: {
+          p_category: string;
+          p_title: string;
+          p_body: string;
+          p_guest_nickname: string;
+          p_password: string;
+          p_image_urls?: string[];
+        } = {
+          p_category: form.category,
+          p_title: form.title.trim(),
+          p_body: form.body.trim(),
+          p_guest_nickname: form.guestNickname.trim(),
+          p_password: form.password,
+        };
+
+        if (imageUrls.length > 0) {
+          rpcPayload.p_image_urls = imageUrls;
+        }
+
+        const { error } = await supabase.rpc("create_guest_board_post", rpcPayload);
+
+        if (error) {
+          setMessage(
+            imageUrls.length > 0 && error.message.includes("p_image_urls")
+              ? "사진 첨부 기능을 사용하려면 005 SQL 실행이 필요합니다."
+              : error.message,
+          );
+          return;
+        }
       }
-    } else {
-      const { error } = await supabase.rpc("create_guest_board_post", {
-        p_category: form.category,
-        p_title: form.title.trim(),
-        p_body: form.body.trim(),
-        p_guest_nickname: form.guestNickname.trim(),
-        p_password: form.password,
-      });
-
-      if (error) {
-        setMessage(error.message);
-        return;
-      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "게시글을 등록할 수 없습니다.");
+      return;
+    } finally {
+      setIsSubmitting(false);
     }
 
     setForm({
@@ -196,6 +331,7 @@ export default function BoardsPage() {
       guestNickname: "",
       password: "",
     });
+    resetImages();
     setIsWriteOpen(false);
     await loadPosts();
   };
@@ -215,6 +351,7 @@ export default function BoardsPage() {
         <nav className="topnav dc-topnav" aria-label="주요 메뉴">
           <Link href="/">이미지</Link>
           <Link href="/boards">게시판</Link>
+          <Link href="/saved">저장함</Link>
           <AuthControls />
         </nav>
       </header>
@@ -278,7 +415,11 @@ export default function BoardsPage() {
             </div>
 
             {isWriteOpen && (
-              <form className="dc-write-panel" onSubmit={submitPost}>
+              <form className="dc-write-panel dc-board-write-panel" onSubmit={submitPost}>
+                <div className="dc-write-panel-head">
+                  <strong>새 글 작성</strong>
+                  <span>이미지는 최대 3장</span>
+                </div>
                 <div className="dc-write-grid">
                   <select
                     value={form.category}
@@ -315,6 +456,7 @@ export default function BoardsPage() {
                     onChange={(event) => setForm({ ...form, title: event.target.value })}
                     placeholder="제목"
                     aria-label="제목"
+                    className="dc-title-input"
                   />
                 </div>
                 <textarea
@@ -322,9 +464,30 @@ export default function BoardsPage() {
                   onChange={(event) => setForm({ ...form, body: event.target.value })}
                   placeholder="내용"
                   aria-label="내용"
+                  className="dc-board-body-input"
                 />
-                <button className="primary-button dc-write-submit" type="submit">
-                  등록
+                <div className="dc-file-row">
+                  <label className="dc-file-button">
+                    <ImagePlus size={15} aria-hidden="true" />
+                    사진 첨부
+                    <input type="file" accept="image/*" multiple onChange={handleImageChange} />
+                  </label>
+                  <span>{imageFiles.length}장 선택됨</span>
+                </div>
+                {imagePreviews.length > 0 && (
+                  <div className="dc-image-preview-grid">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={preview} className="dc-image-preview">
+                        <img src={preview} alt={`첨부 이미지 ${index + 1}`} />
+                        <button type="button" onClick={() => removeImage(index)} aria-label="첨부 이미지 제거">
+                          <X size={14} aria-hidden="true" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button className="primary-button dc-write-submit" type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "등록 중" : "등록"}
                 </button>
               </form>
             )}
@@ -350,7 +513,12 @@ export default function BoardsPage() {
                 <Link key={post.id} className="board-row dc-post-row" href={`/boards/${post.id}`}>
                   <span className="board-label">{post.category}</span>
                   <div className="dc-post-title">
-                    <h3>{post.title}</h3>
+                    <h3>
+                      {post.title}
+                      {(post.image_urls?.length ?? 0) > 0 && (
+                        <span className="dc-post-image-badge">사진 {post.image_urls?.length}</span>
+                      )}
+                    </h3>
                     <p>{post.body}</p>
                   </div>
                   <small>@{getAuthorName(post)}</small>

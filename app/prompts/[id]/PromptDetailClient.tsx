@@ -15,6 +15,7 @@ import { AuthControls } from "@/app/components/AuthControls";
 import { getPromptVersions } from "@/data/community";
 import { prompts } from "@/data/prompts";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getPromptLabVisitorKey } from "@/lib/visitor-key";
 
 type PromptCommentRow = {
   id: string;
@@ -30,21 +31,6 @@ type PromptCounts = {
   saves: number;
   comments: number;
 };
-
-function getVisitorKey() {
-  const storageKey = "prompt-lab-visitor-key";
-  const existing = window.localStorage.getItem(storageKey);
-
-  if (existing) return existing;
-
-  const nextKey =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-  window.localStorage.setItem(storageKey, nextKey);
-  return nextKey;
-}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -67,7 +53,8 @@ export default function PromptDetailPage() {
     password: "",
     body: "",
   });
-  const [message, setMessage] = useState("");
+  const [reactionMessage, setReactionMessage] = useState("");
+  const [commentMessage, setCommentMessage] = useState("");
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   const prompt = useMemo(
@@ -124,7 +111,7 @@ export default function PromptDetailPage() {
   };
 
   useEffect(() => {
-    setVisitorKey(getVisitorKey());
+    setVisitorKey(getPromptLabVisitorKey());
   }, []);
 
   useEffect(() => {
@@ -140,36 +127,50 @@ export default function PromptDetailPage() {
 
   const toggleReaction = async (kind: "like" | "save") => {
     if (!supabase || !prompt || !visitorKey) {
-      setMessage("잠시 후 다시 시도하세요.");
+      setReactionMessage("잠시 후 다시 시도하세요.");
       return;
     }
 
-    setMessage("");
+    setReactionMessage("");
 
-    const { error } = await supabase.rpc("toggle_prompt_reaction", {
+    const { data, error } = await supabase.rpc("toggle_prompt_reaction", {
       p_prompt_id: prompt.id,
       p_visitor_key: visitorKey,
       p_kind: kind,
     });
 
     if (error) {
-      setMessage("반응 기능을 사용하려면 004 SQL 실행이 필요합니다.");
+      setReactionMessage("반응 기능을 사용할 수 없습니다. 잠시 후 다시 시도하세요.");
       return;
     }
 
     await loadInteractions(visitorKey);
+
+    if (kind === "save") {
+      setReactionMessage(data ? "저장함에 추가했습니다." : "저장함에서 제거했습니다.");
+    }
   };
 
   const submitComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!supabase || !prompt) {
-      setMessage("댓글 기능을 사용하려면 Supabase 설정이 필요합니다.");
+      setCommentMessage("댓글 기능을 사용하려면 Supabase 설정이 필요합니다.");
       return;
     }
 
     if (!commentForm.body.trim()) {
-      setMessage("댓글 내용을 입력하세요.");
+      setCommentMessage("댓글 내용을 입력하세요.");
+      return;
+    }
+
+    if (commentForm.guestNickname.trim().length < 2) {
+      setCommentMessage("닉네임은 2자 이상이어야 합니다.");
+      return;
+    }
+
+    if (commentForm.password.length < 4) {
+      setCommentMessage("비밀번호는 4자 이상이어야 합니다.");
       return;
     }
 
@@ -181,12 +182,12 @@ export default function PromptDetailPage() {
     });
 
     if (error) {
-      setMessage("댓글 기능을 사용하려면 004 SQL 실행이 필요합니다.");
+      setCommentMessage(error.message || "댓글을 등록할 수 없습니다.");
       return;
     }
 
     setCommentForm({ guestNickname: "", password: "", body: "" });
-    setMessage("");
+    setCommentMessage("");
     await loadInteractions(visitorKey);
   };
 
@@ -219,6 +220,7 @@ export default function PromptDetailPage() {
         <nav className="topnav dc-topnav" aria-label="주요 메뉴">
           <Link href="/">갤러리</Link>
           <Link href="/boards">게시판</Link>
+          <Link href="/saved">저장함</Link>
           <AuthControls />
         </nav>
       </header>
@@ -270,6 +272,7 @@ export default function PromptDetailPage() {
                   댓글 {counts.comments}
                 </button>
               </div>
+              {reactionMessage && <p className="dc-inline-message">{reactionMessage}</p>}
             </div>
           </article>
 
@@ -345,7 +348,7 @@ export default function PromptDetailPage() {
               </button>
             </form>
 
-            {message && <p className="dc-status-message">{message}</p>}
+            {commentMessage && <p className="dc-status-message">{commentMessage}</p>}
 
             <div className="comment-list full">
               {comments.length > 0 ? (

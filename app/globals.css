@@ -2465,3 +2465,151 @@ body,
   line-height: 12px;
   margin-top: 1px;
 }
+
+.dc-inline-message {
+  color: #2f5f9f;
+  font-size: 13px;
+  margin: 10px 0 0;
+}
+
+.saved-page {
+  margin: 0 auto;
+  max-width: 1280px;
+}
+
+.dc-board-write-panel {
+  border-top: 0;
+  gap: 10px;
+}
+
+.dc-write-panel-head {
+  align-items: center;
+  background: #f7f7f7;
+  border: 1px solid #dfe2e5;
+  display: flex;
+  justify-content: space-between;
+  margin: -1px -1px 0;
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.dc-write-panel-head strong {
+  color: #111;
+  font-size: 13px;
+}
+
+.dc-write-panel-head span {
+  color: #777;
+  font-size: 12px;
+}
+
+.dc-board-write-panel .dc-write-grid {
+  grid-template-columns: 110px 130px 170px minmax(0, 1fr);
+}
+
+.dc-board-write-panel .dc-title-input {
+  font-weight: 700;
+}
+
+.dc-board-write-panel .dc-board-body-input {
+  min-height: 210px;
+}
+
+.dc-file-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dc-file-row span {
+  color: #666;
+  font-size: 12px;
+}
+
+.dc-file-button {
+  align-items: center;
+  background: #f7f7f7;
+  border: 1px solid #c7cbd0;
+  color: #222;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 12px;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 9px;
+}
+
+.dc-file-button input {
+  display: none;
+}
+
+.dc-image-preview-grid,
+.dc-board-image-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dc-image-preview {
+  border: 1px solid #d6d9d0;
+  min-width: 0;
+  position: relative;
+}
+
+.dc-image-preview img,
+.dc-board-image-grid img {
+  aspect-ratio: 1.2;
+  background: #f7f8f5;
+  object-fit: cover;
+}
+
+.dc-image-preview button {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.72);
+  border: 0;
+  color: #fff;
+  display: inline-flex;
+  height: 26px;
+  justify-content: center;
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 26px;
+}
+
+.dc-post-title h3 {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.dc-post-image-badge {
+  border: 1px solid #c7cbd0;
+  color: #555;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 1px 4px;
+}
+
+.dc-board-image-grid {
+  border-bottom: 1px solid #eceef0;
+  padding: 14px;
+}
+
+.dc-board-post-body,
+.dc-board-article > p,
+.board-detail-article > p,
+.comment-list article p {
+  color: #20231f;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 760px) {
+  .dc-board-write-panel .dc-write-grid,
+  .dc-image-preview-grid,
+  .dc-board-image-grid {
+    grid-template-columns: 1fr;
+  }
+}
