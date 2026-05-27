@@ -1,23 +1,82 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  Bookmark,
   Camera,
   FileText,
+  Heart,
   Layers,
+  MessageCircle,
   Search,
   Upload,
 } from "lucide-react";
 import { categories, prompts } from "@/data/prompts";
 import { AuthControls } from "@/app/components/AuthControls";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type FeedTab = "all" | "korean" | "english" | "mixed";
+type PromptCounts = Record<number, { likes: number; saves: number; comments: number }>;
 
 export default function Home() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("전체");
   const [feedTab, setFeedTab] = useState<FeedTab>("all");
+  const [promptCounts, setPromptCounts] = useState<PromptCounts>({});
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let isMounted = true;
+    const client = supabase;
+    const promptIds = prompts.map((prompt) => prompt.id);
+
+    async function loadPromptCounts() {
+      const [reactionResult, commentResult] = await Promise.all([
+        client
+          .from("prompt_reactions")
+          .select("prompt_id, kind")
+          .in("prompt_id", promptIds),
+        client
+          .from("prompt_comments")
+          .select("prompt_id")
+          .eq("is_hidden", false)
+          .in("prompt_id", promptIds),
+      ]);
+
+      if (!isMounted) return;
+
+      const nextCounts: PromptCounts = {};
+
+      if (!reactionResult.error) {
+        reactionResult.data?.forEach((reaction) => {
+          const promptId = Number(reaction.prompt_id);
+          nextCounts[promptId] ??= { likes: 0, saves: 0, comments: 0 };
+
+          if (reaction.kind === "like") nextCounts[promptId].likes += 1;
+          if (reaction.kind === "save") nextCounts[promptId].saves += 1;
+        });
+      }
+
+      if (!commentResult.error) {
+        commentResult.data?.forEach((comment) => {
+          const promptId = Number(comment.prompt_id);
+          nextCounts[promptId] ??= { likes: 0, saves: 0, comments: 0 };
+          nextCounts[promptId].comments += 1;
+        });
+      }
+
+      setPromptCounts(nextCounts);
+    }
+
+    loadPromptCounts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
 
   const filteredPrompts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -175,6 +234,7 @@ export default function Home() {
             <span>이미지</span>
             <span>제목</span>
             <span>모델</span>
+            <span>반응</span>
           </div>
 
           <div className="gallery-grid dc-gallery-grid">
@@ -192,6 +252,17 @@ export default function Home() {
                     <span>{prompt.model}</span>
                     <span>{prompt.language}</span>
                     <span>{prompt.style}</span>
+                  </div>
+                  <div className="card-reactions">
+                    <span>
+                      <Heart size={14} aria-hidden="true" /> {promptCounts[prompt.id]?.likes ?? 0}
+                    </span>
+                    <span>
+                      <Bookmark size={14} aria-hidden="true" /> {promptCounts[prompt.id]?.saves ?? 0}
+                    </span>
+                    <span>
+                      <MessageCircle size={14} aria-hidden="true" /> {promptCounts[prompt.id]?.comments ?? 0}
+                    </span>
                   </div>
                 </div>
               </Link>

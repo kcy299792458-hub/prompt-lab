@@ -296,7 +296,7 @@
   color: #555;
   display: grid;
   font-size: 12px;
-  grid-template-columns: 120px minmax(0, 1fr) 160px;
+  grid-template-columns: 120px minmax(0, 1fr) 120px 150px;
   min-height: 31px;
 }
 
@@ -2425,6 +2425,13 @@ body,
   background: #ffffff;
   border-color: #c9cec4;
   color: #20231f;
+}
+
+.icon-action.active {
+  background: #eef4ff;
+  border-color: #2f5f9f;
+  color: #173e74;
+  font-weight: 700;
 }
 
 .brand-mark {
