@@ -104,8 +104,8 @@ export default function Home() {
             <ImageIcon size={18} aria-hidden="true" />
           </span>
           <span>
-            <strong>프롬포트랩</strong>
-            <small>이미지 프롬프트 갤러리</small>
+            <strong>프롬프트랩</strong>
+            <small>AI 이미지 갤러리</small>
           </span>
         </Link>
         <nav className="topnav dc-topnav" aria-label="주요 메뉴">
