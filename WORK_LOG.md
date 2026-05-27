@@ -22,6 +22,8 @@
 - 비회원 댓글 작성 UI 추가
 - 비회원 글/댓글 비밀번호 해시 저장용 마이그레이션 추가:
   `supabase/migrations/001_guest_board_posts.sql`
+- 비회원 게시글 수정/삭제, 댓글 삭제용 마이그레이션 추가:
+  `supabase/migrations/002_guest_edit_delete.sql`
 
 ## 지금까지 한 일
 
@@ -43,7 +45,8 @@
 4. Vercel 환경변수에도 Supabase URL과 anon key를 넣는다.
 5. 실제 로그인 테스트를 한다.
 6. Supabase SQL Editor에서 `supabase/migrations/001_guest_board_posts.sql`을 실행한다.
-7. 비회원 글쓰기와 댓글 작성을 테스트한다.
+7. Supabase SQL Editor에서 `supabase/migrations/002_guest_edit_delete.sql`을 실행한다.
+8. 비회원 글쓰기, 댓글 작성, 수정, 삭제를 테스트한다.
 
 ## Vercel 설정값
 

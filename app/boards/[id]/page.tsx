@@ -2,17 +2,20 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Eye,
   Heart,
   Image as ImageIcon,
   MessageCircle,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+const boardCategories = ["공지", "자유", "질문", "팁/연구"] as const;
 
 type BoardPostRow = {
   id: string;
@@ -35,10 +38,6 @@ type CommentRow = {
 
 type SessionUser = {
   id: string;
-  email?: string;
-  user_metadata?: {
-    nickname?: string;
-  };
 };
 
 function formatDate(value: string) {
@@ -56,12 +55,22 @@ function getAuthorName(item: { guest_nickname: string | null }) {
 
 export default function BoardPostPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [post, setPost] = useState<BoardPostRow | null>(null);
   const [bestPosts, setBestPosts] = useState<BoardPostRow[]>([]);
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    category: "자유",
+    title: "",
+    body: "",
+    password: "",
+  });
+  const [deletePassword, setDeletePassword] = useState("");
+  const [commentPasswords, setCommentPasswords] = useState<Record<string, string>>({});
   const [commentForm, setCommentForm] = useState({
     body: "",
     guestNickname: "",
@@ -103,9 +112,20 @@ export default function BoardPostPage() {
       setMessage(postResult.error.message);
     }
 
-    setPost((postResult.data as BoardPostRow | null) ?? null);
+    const nextPost = (postResult.data as BoardPostRow | null) ?? null;
+    setPost(nextPost);
     setComments((commentResult.data ?? []) as CommentRow[]);
     setBestPosts((bestResult.data ?? []) as BoardPostRow[]);
+
+    if (nextPost) {
+      setEditForm((current) => ({
+        category: current.title ? current.category : nextPost.category,
+        title: current.title || nextPost.title,
+        body: current.body || nextPost.body,
+        password: current.password,
+      }));
+    }
+
     setIsLoading(false);
   };
 
@@ -170,11 +190,65 @@ export default function BoardPostPage() {
       }
     }
 
-    setCommentForm({
-      body: "",
-      guestNickname: "",
-      password: "",
+    setCommentForm({ body: "", guestNickname: "", password: "" });
+    await loadPost();
+  };
+
+  const updateGuestPost = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!supabase || !post) return;
+
+    const { error } = await supabase.rpc("update_guest_board_post", {
+      p_board_post_id: post.id,
+      p_title: editForm.title.trim(),
+      p_body: editForm.body.trim(),
+      p_category: editForm.category,
+      p_password: editForm.password,
     });
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("게시글을 수정했습니다.");
+    setIsEditing(false);
+    setEditForm({ ...editForm, password: "" });
+    await loadPost();
+  };
+
+  const deleteGuestPost = async () => {
+    if (!supabase || !post) return;
+
+    const { error } = await supabase.rpc("delete_guest_board_post", {
+      p_board_post_id: post.id,
+      p_password: deletePassword,
+    });
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    router.push("/boards");
+  };
+
+  const deleteGuestComment = async (commentId: string) => {
+    if (!supabase) return;
+
+    const { error } = await supabase.rpc("delete_guest_board_comment", {
+      p_comment_id: commentId,
+      p_password: commentPasswords[commentId] ?? "",
+    });
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("댓글을 삭제했습니다.");
+    setCommentPasswords({ ...commentPasswords, [commentId]: "" });
     await loadPost();
   };
 
@@ -254,6 +328,66 @@ export default function BoardPostPage() {
                 </span>
               </div>
               <p>{post.body}</p>
+
+              {!post.author_id && (
+                <div className="dc-owner-tools">
+                  <button type="button" onClick={() => setIsEditing((value) => !value)}>
+                    수정
+                  </button>
+                  <input
+                    value={deletePassword}
+                    onChange={(event) => setDeletePassword(event.target.value)}
+                    placeholder="삭제 비밀번호"
+                    type="password"
+                    aria-label="삭제 비밀번호"
+                  />
+                  <button type="button" onClick={deleteGuestPost}>
+                    삭제
+                  </button>
+                </div>
+              )}
+
+              {isEditing && (
+                <form className="dc-write-panel dc-edit-panel" onSubmit={updateGuestPost}>
+                  <div className="dc-write-grid">
+                    <select
+                      value={editForm.category}
+                      onChange={(event) =>
+                        setEditForm({ ...editForm, category: event.target.value })
+                      }
+                      aria-label="분류"
+                    >
+                      {boardCategories.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+                    <input
+                      value={editForm.password}
+                      onChange={(event) =>
+                        setEditForm({ ...editForm, password: event.target.value })
+                      }
+                      placeholder="수정 비밀번호"
+                      type="password"
+                      aria-label="수정 비밀번호"
+                    />
+                    <input
+                      value={editForm.title}
+                      onChange={(event) => setEditForm({ ...editForm, title: event.target.value })}
+                      placeholder="제목"
+                      aria-label="제목"
+                    />
+                  </div>
+                  <textarea
+                    value={editForm.body}
+                    onChange={(event) => setEditForm({ ...editForm, body: event.target.value })}
+                    placeholder="내용"
+                    aria-label="내용"
+                  />
+                  <button className="primary-button dc-write-submit" type="submit">
+                    수정 저장
+                  </button>
+                </form>
+              )}
             </article>
 
             <aside className="dc-rank-box dc-board-best" aria-label="실시간 베스트">
@@ -324,6 +458,26 @@ export default function BoardPostPage() {
                     <span>{formatDate(comment.created_at)}</span>
                   </div>
                   <p>{comment.body}</p>
+                  {!comment.author_id && (
+                    <div className="dc-comment-tools">
+                      <input
+                        value={commentPasswords[comment.id] ?? ""}
+                        onChange={(event) =>
+                          setCommentPasswords({
+                            ...commentPasswords,
+                            [comment.id]: event.target.value,
+                          })
+                        }
+                        placeholder="삭제 비밀번호"
+                        type="password"
+                        aria-label="댓글 삭제 비밀번호"
+                      />
+                      <button type="button" onClick={() => deleteGuestComment(comment.id)}>
+                        <Trash2 size={13} aria-hidden="true" />
+                        삭제
+                      </button>
+                    </div>
+                  )}
                 </article>
               ))
             ) : (
