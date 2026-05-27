@@ -9,7 +9,6 @@ import {
   Eye,
   Flame,
   Heart,
-  Image as ImageIcon,
   MessageCircle,
   Search,
   Upload,
@@ -101,7 +100,7 @@ export default function Home() {
       <header className="topbar dc-topbar">
         <Link className="brand dc-brand" href="/">
           <span className="brand-mark">
-            <ImageIcon size={18} aria-hidden="true" />
+            <img className="brand-logo" src="/logo.png" alt="" />
           </span>
           <span>
             <strong>프롬프트랩</strong>

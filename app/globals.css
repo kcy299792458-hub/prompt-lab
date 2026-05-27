@@ -27,6 +27,14 @@
 .brand-mark {
   background: #242824;
   color: #ffffff;
+  overflow: hidden;
+}
+
+.brand-logo {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 /* DC-style functional community pass */
