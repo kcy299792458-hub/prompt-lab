@@ -2472,9 +2472,134 @@ body,
   margin: 10px 0 0;
 }
 
+.dc-home-panels .dc-rank-box li {
+  grid-template-columns: 22px minmax(0, 1fr) 96px;
+}
+
+.dc-home-panels .dc-rank-box small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dc-rank-empty {
+  color: #777;
+  display: block !important;
+  font-size: 12px;
+  min-height: 34px;
+  padding: 10px;
+}
+
+.dc-upload-button {
+  border-radius: 0;
+  font-size: 12px;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.dc-upload-entry {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.dc-card-author-line {
+  margin-top: 8px;
+}
+
+.dc-author-line {
+  border-top: 1px solid #eceef0;
+  color: #555;
+  margin: 12px 0 14px;
+  padding-top: 10px;
+}
+
+.dc-author-line span {
+  align-items: center;
+  display: inline-flex;
+  gap: 5px;
+}
+
 .saved-page {
   margin: 0 auto;
   max-width: 1280px;
+}
+
+.upload-page {
+  margin: 0 auto;
+  max-width: 1280px;
+}
+
+.upload-form-panel {
+  background: #ffffff;
+  border: 1px solid #c7cbd0;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.upload-form-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.upload-title-input {
+  grid-column: span 2;
+  font-weight: 700;
+}
+
+.upload-form-panel input,
+.upload-form-panel select,
+.upload-form-panel textarea {
+  background: #ffffff;
+  border: 1px solid #c9cec4;
+  color: #20231f;
+  font: inherit;
+  font-size: 13px;
+  outline: 0;
+  padding: 9px;
+  width: 100%;
+}
+
+.upload-description-input {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.upload-prompt-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.upload-prompt-grid textarea {
+  min-height: 170px;
+  resize: vertical;
+}
+
+.upload-preview-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.upload-submit-button {
+  border-radius: 0;
+  justify-self: end;
+  min-height: 36px;
+  padding: 0 14px;
+}
+
+.uploaded-image-viewer {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.uploaded-image-viewer .detail-hero-image {
+  height: 100%;
+  max-height: none;
 }
 
 .dc-board-write-panel {
@@ -2609,7 +2734,19 @@ body,
 @media (max-width: 760px) {
   .dc-board-write-panel .dc-write-grid,
   .dc-image-preview-grid,
-  .dc-board-image-grid {
+  .dc-board-image-grid,
+  .upload-form-grid,
+  .upload-prompt-grid,
+  .upload-preview-grid {
     grid-template-columns: 1fr;
+  }
+
+  .upload-title-input {
+    grid-column: auto;
+  }
+
+  .dc-upload-entry {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

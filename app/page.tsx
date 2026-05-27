@@ -4,26 +4,118 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Bookmark,
-  Camera,
-  FileText,
   Heart,
-  Layers,
   MessageCircle,
   Search,
   Upload,
 } from "lucide-react";
-import { categories, prompts } from "@/data/prompts";
+import { categories, prompts, type Prompt } from "@/data/prompts";
 import { AuthControls } from "@/app/components/AuthControls";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type FeedTab = "all" | "korean" | "english" | "mixed";
 type PromptCounts = Record<number, { likes: number; saves: number; comments: number }>;
+type UploadedImagePostRow = {
+  id: string;
+  author_id: string;
+  title: string;
+  description: string;
+  category: string;
+  model: string;
+  aspect_ratio: string;
+  style: string;
+  image_url: string;
+  image_urls?: string[] | null;
+  tags: string[] | null;
+  created_at: string;
+  profiles?: { nickname: string } | { nickname: string }[] | null;
+};
+type PromptCommentActivityRow = {
+  id: string;
+  prompt_id: number;
+  guest_nickname: string;
+  body: string;
+  created_at: string;
+};
+type RequestPostRow = {
+  id: string;
+  title: string;
+  guest_nickname: string | null;
+  created_at: string;
+};
+
+type GalleryItem = {
+  kind: "seed" | "uploaded";
+  id: string;
+  numericId?: number;
+  title: string;
+  description: string;
+  category: string;
+  model: string;
+  aspectRatio: string;
+  style: string;
+  language: string;
+  image: string;
+  href: string;
+  tags: string[];
+  authorName: string;
+  sortKey: number;
+};
+
+function getProfileNickname(profile: UploadedImagePostRow["profiles"]) {
+  if (Array.isArray(profile)) return profile[0]?.nickname || "회원";
+  return profile?.nickname || "회원";
+}
+
+function promptToGalleryItem(prompt: Prompt): GalleryItem {
+  return {
+    kind: "seed",
+    id: String(prompt.id),
+    numericId: prompt.id,
+    title: prompt.title,
+    description: prompt.description,
+    category: prompt.category,
+    model: prompt.model,
+    aspectRatio: prompt.aspectRatio,
+    style: prompt.style,
+    language: prompt.language,
+    image: prompt.image,
+    href: `/prompts/${prompt.id}`,
+    tags: prompt.tags,
+    authorName: prompt.authorName || "운영자",
+    sortKey: prompt.id,
+  };
+}
+
+function uploadedToGalleryItem(post: UploadedImagePostRow): GalleryItem {
+  const images = post.image_urls && post.image_urls.length > 0 ? post.image_urls : [post.image_url];
+
+  return {
+    kind: "uploaded",
+    id: post.id,
+    title: post.title,
+    description: post.description,
+    category: post.category,
+    model: post.model || "모델 미기재",
+    aspectRatio: post.aspect_ratio || "비율 미기재",
+    style: post.style || "스타일 미기재",
+    language: "사용자 업로드",
+    image: images[0],
+    href: `/images/${post.id}`,
+    tags: post.tags ?? [],
+    authorName: getProfileNickname(post.profiles),
+    sortKey: new Date(post.created_at).getTime(),
+  };
+}
 
 export default function Home() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("전체");
   const [feedTab, setFeedTab] = useState<FeedTab>("all");
   const [promptCounts, setPromptCounts] = useState<PromptCounts>({});
+  const [uploadedPosts, setUploadedPosts] = useState<UploadedImagePostRow[]>([]);
+  const [recentPromptComments, setRecentPromptComments] = useState<PromptCommentActivityRow[]>([]);
+  const [requestPosts, setRequestPosts] = useState<RequestPostRow[]>([]);
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   useEffect(() => {
@@ -78,20 +170,163 @@ export default function Home() {
     };
   }, [supabase]);
 
+  useEffect(() => {
+    if (!supabase) return;
+
+    let isMounted = true;
+    const client = supabase;
+
+    async function loadCommunityPanels() {
+      const [commentResult, requestResult] = await Promise.all([
+        client
+          .from("prompt_comments")
+          .select("id, prompt_id, guest_nickname, body, created_at")
+          .eq("is_hidden", false)
+          .order("created_at", { ascending: false })
+          .limit(5),
+        client
+          .from("board_posts")
+          .select("id, title, guest_nickname, created_at")
+          .eq("is_hidden", false)
+          .eq("category", "질문")
+          .order("created_at", { ascending: false })
+          .limit(5),
+      ]);
+
+      if (!isMounted) return;
+
+      setRecentPromptComments(
+        commentResult.error ? [] : ((commentResult.data ?? []) as PromptCommentActivityRow[]),
+      );
+      setRequestPosts(requestResult.error ? [] : ((requestResult.data ?? []) as RequestPostRow[]));
+    }
+
+    loadCommunityPanels();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let isMounted = true;
+    const client = supabase;
+
+    async function loadUploadedPosts() {
+      const result = await client
+        .from("image_posts")
+        .select(
+          "id, author_id, title, description, category, model, aspect_ratio, style, image_url, image_urls, tags, created_at, profiles(nickname)",
+        )
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: false })
+        .limit(60);
+
+      let rows = result.data as UploadedImagePostRow[] | null;
+      let error = result.error;
+
+      if (error?.message.includes("image_urls")) {
+        const retryResult = await client
+          .from("image_posts")
+          .select(
+            "id, author_id, title, description, category, model, aspect_ratio, style, image_url, tags, created_at, profiles(nickname)",
+          )
+          .eq("is_hidden", false)
+          .order("created_at", { ascending: false })
+          .limit(60);
+
+        rows = retryResult.data as UploadedImagePostRow[] | null;
+        error = retryResult.error;
+      }
+
+      if (!isMounted) return;
+      setUploadedPosts(error ? [] : ((rows ?? []) as UploadedImagePostRow[]));
+    }
+
+    loadUploadedPosts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
+
+  const galleryItems = useMemo(
+    () => [
+      ...uploadedPosts.map(uploadedToGalleryItem),
+      ...prompts.map(promptToGalleryItem),
+    ],
+    [uploadedPosts],
+  );
+
+  const popularPrompts = useMemo(
+    () =>
+      prompts
+        .map((prompt) => ({
+          prompt,
+          score:
+            (promptCounts[prompt.id]?.likes ?? 0) * 2 +
+            (promptCounts[prompt.id]?.saves ?? 0) +
+            (promptCounts[prompt.id]?.comments ?? 0),
+        }))
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5),
+    [promptCounts],
+  );
+
+  const recentActivities = useMemo(() => {
+    const todayKey = new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
+    const todayPosts = uploadedPosts
+      .filter(
+        (post) =>
+          new Intl.DateTimeFormat("ko-KR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).format(new Date(post.created_at)) === todayKey,
+      )
+      .map((post) => ({
+        id: post.id,
+        href: `/images/${post.id}`,
+        title: post.title,
+        meta: "오늘 올라온 글",
+        sortKey: new Date(post.created_at).getTime(),
+      }));
+
+    const comments = recentPromptComments.map((comment) => {
+      const prompt = prompts.find((item) => item.id === Number(comment.prompt_id));
+
+      return {
+        id: comment.id,
+        href: `/prompts/${comment.prompt_id}`,
+        title: prompt ? prompt.title : `프롬프트 ${comment.prompt_id}`,
+        meta: `댓글 @${comment.guest_nickname}`,
+        sortKey: new Date(comment.created_at).getTime(),
+      };
+    });
+
+    return [...todayPosts, ...comments].sort((a, b) => b.sortKey - a.sortKey).slice(0, 5);
+  }, [recentPromptComments, uploadedPosts]);
+
   const filteredPrompts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    const filtered = prompts.filter((prompt) => {
+    const filtered = galleryItems.filter((prompt) => {
       const matchesCategory = category === "전체" || prompt.category === category;
       const matchesTab =
         feedTab === "all" ||
         (feedTab === "korean" &&
           (prompt.language === "한국어" ||
-            prompt.language === "한영 혼합" ||
-            prompt.promptVersions?.some((version) => version.language === "한국어"))) ||
+            prompt.language === "한영 혼합")) ||
         (feedTab === "english" &&
-          (prompt.language === "영어" ||
-            prompt.promptVersions?.some((version) => version.language === "영어"))) ||
+          prompt.language === "영어") ||
         (feedTab === "mixed" && prompt.language === "한영 혼합");
       const searchableText = [
         prompt.title,
@@ -101,7 +336,7 @@ export default function Home() {
         prompt.style,
         prompt.language,
         prompt.aspectRatio,
-        ...(prompt.promptVersions?.map((version) => version.body) ?? []),
+        prompt.authorName,
         prompt.tags.join(" "),
       ]
         .join(" ")
@@ -110,8 +345,8 @@ export default function Home() {
       return matchesCategory && matchesTab && searchableText.includes(normalizedQuery);
     });
 
-    return [...filtered].sort((a, b) => b.id - a.id);
-  }, [category, feedTab, query]);
+    return [...filtered].sort((a, b) => b.sortKey - a.sortKey);
+  }, [category, feedTab, galleryItems, query]);
 
   return (
     <main className="site-shell dc-shell">
@@ -129,7 +364,7 @@ export default function Home() {
           <a href="#gallery">이미지</a>
           <Link href="/boards">게시판</Link>
           <Link href="/saved">저장함</Link>
-          <a href="#submit">등록</a>
+          <Link href="/upload">업로드</Link>
           <AuthControls />
         </nav>
       </header>
@@ -150,22 +385,66 @@ export default function Home() {
         </label>
       </section>
 
-      <section className="stats-row dc-stats" aria-label="서비스 지표">
-        <div>
-          <Camera size={17} aria-hidden="true" />
-          <strong>{prompts.length}</strong>
-          <span>예시 이미지</span>
-        </div>
-        <div>
-          <Layers size={17} aria-hidden="true" />
-          <strong>{categories.length - 1}</strong>
-          <span>카테고리</span>
-        </div>
-        <div>
-          <FileText size={17} aria-hidden="true" />
-          <strong>포함</strong>
-          <span>원문과 모델 정보</span>
-        </div>
+      <section className="dc-rank-grid dc-home-panels" aria-label="커뮤니티 현황">
+        <aside className="dc-rank-box">
+          <div className="dc-rank-head">
+            <strong>실시간 인기 프롬프트</strong>
+            <span>랭킹</span>
+          </div>
+          <ol>
+            {popularPrompts.length > 0 ? (
+              popularPrompts.map(({ prompt, score }, index) => (
+                <li key={prompt.id}>
+                  <span className="dc-rank-num">{index + 1}</span>
+                  <Link href={`/prompts/${prompt.id}`}>{prompt.title}</Link>
+                  <small>{score}</small>
+                </li>
+              ))
+            ) : (
+              <li className="dc-rank-empty">아직 반응이 없습니다</li>
+            )}
+          </ol>
+        </aside>
+
+        <aside className="dc-rank-box">
+          <div className="dc-rank-head">
+            <strong>오늘 글 / 최근 댓글</strong>
+            <span>최근반응</span>
+          </div>
+          <ol>
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity, index) => (
+                <li key={`${activity.id}-${index}`}>
+                  <span className="dc-rank-num">{index + 1}</span>
+                  <Link href={activity.href}>{activity.title}</Link>
+                  <small>{activity.meta}</small>
+                </li>
+              ))
+            ) : (
+              <li className="dc-rank-empty">아직 최근 반응이 없습니다</li>
+            )}
+          </ol>
+        </aside>
+
+        <aside className="dc-rank-box">
+          <div className="dc-rank-head">
+            <strong>프롬프트 요청 게시판</strong>
+            <span>질문</span>
+          </div>
+          <ol>
+            {requestPosts.length > 0 ? (
+              requestPosts.map((post, index) => (
+                <li key={post.id}>
+                  <span className="dc-rank-num">{index + 1}</span>
+                  <Link href={`/boards/${post.id}`}>{post.title}</Link>
+                  <small>@{post.guest_nickname || "회원"}</small>
+                </li>
+              ))
+            ) : (
+              <li className="dc-rank-empty">요청 글이 없습니다</li>
+            )}
+          </ol>
+        </aside>
       </section>
 
       <section id="gallery" className="dc-board-layout">
@@ -182,8 +461,8 @@ export default function Home() {
                 <span>{item}</span>
                 <small>
                   {item === "전체"
-                    ? prompts.length
-                    : prompts.filter((prompt) => prompt.category === item).length}
+                    ? galleryItems.length
+                    : galleryItems.filter((prompt) => prompt.category === item).length}
                 </small>
               </button>
             ))}
@@ -199,6 +478,10 @@ export default function Home() {
               <p className="section-kicker">Prompt Gallery</p>
               <h2>{filteredPrompts.length}개의 이미지 글</h2>
             </div>
+            <Link className="primary-button dc-upload-button" href="/upload">
+              <Upload size={15} aria-hidden="true" />
+              이미지 업로드
+            </Link>
             <div className="sort-tabs board-tabs" aria-label="게시글 정렬">
               <button
                 type="button"
@@ -240,7 +523,7 @@ export default function Home() {
 
           <div className="gallery-grid dc-gallery-grid">
             {filteredPrompts.map((prompt) => (
-              <Link key={prompt.id} className="image-card dc-image-card" href={`/prompts/${prompt.id}`}>
+              <Link key={`${prompt.kind}-${prompt.id}`} className="image-card dc-image-card" href={prompt.href}>
                 <img src={prompt.image} alt={`${prompt.title} 결과 이미지`} />
                 <div className="image-card-body">
                   <div className="card-meta">
@@ -254,15 +537,22 @@ export default function Home() {
                     <span>{prompt.language}</span>
                     <span>{prompt.style}</span>
                   </div>
+                  <div className="card-author-line dc-card-author-line">
+                    <span>작성자 @{prompt.authorName}</span>
+                    <span>{prompt.kind === "uploaded" ? "업로드" : "예시"}</span>
+                  </div>
                   <div className="card-reactions">
                     <span>
-                      <Heart size={14} aria-hidden="true" /> {promptCounts[prompt.id]?.likes ?? 0}
+                      <Heart size={14} aria-hidden="true" />{" "}
+                      {prompt.numericId ? (promptCounts[prompt.numericId]?.likes ?? 0) : 0}
                     </span>
                     <span>
-                      <Bookmark size={14} aria-hidden="true" /> {promptCounts[prompt.id]?.saves ?? 0}
+                      <Bookmark size={14} aria-hidden="true" />{" "}
+                      {prompt.numericId ? (promptCounts[prompt.numericId]?.saves ?? 0) : 0}
                     </span>
                     <span>
-                      <MessageCircle size={14} aria-hidden="true" /> {promptCounts[prompt.id]?.comments ?? 0}
+                      <MessageCircle size={14} aria-hidden="true" />{" "}
+                      {prompt.numericId ? (promptCounts[prompt.numericId]?.comments ?? 0) : 0}
                     </span>
                   </div>
                 </div>
@@ -272,30 +562,15 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="submit" className="submit-section dc-submit">
+      <section className="submit-section dc-submit dc-upload-entry">
         <div>
           <p className="section-kicker">Upload</p>
           <h2>이미지 결과와 프롬프트 원문을 같이 올리기</h2>
         </div>
-        <form className="submit-form">
-          <input placeholder="이미지 제목" aria-label="이미지 제목" />
-          <input placeholder="사용 모델" aria-label="사용 모델" />
-          <select aria-label="카테고리">
-            {categories
-              .filter((item) => item !== "전체")
-              .map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-          </select>
-          <input placeholder="비율 예: 16:9, 4:5, 1:1" aria-label="비율" />
-          <textarea placeholder="한국어 프롬프트 원문 또는 설명" aria-label="한국어 프롬프트 원문" />
-          <textarea placeholder="영어 프롬프트 원문" aria-label="영어 프롬프트 원문" />
-          <textarea placeholder="네거티브 프롬프트 또는 추가 설정" aria-label="네거티브 프롬프트 또는 추가 설정" />
-          <button type="button" className="primary-button">
-            <Upload size={18} aria-hidden="true" />
-            이미지와 프롬프트 등록
-          </button>
-        </form>
+        <Link href="/upload" className="primary-button">
+          <Upload size={18} aria-hidden="true" />
+          이미지 업로드 페이지로
+        </Link>
       </section>
     </main>
   );

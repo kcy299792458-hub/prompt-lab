@@ -1,0 +1,248 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { ArrowLeft, Check, Copy, UserRound } from "lucide-react";
+import { AuthControls } from "@/app/components/AuthControls";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+type UploadedImagePostRow = {
+  id: string;
+  author_id: string;
+  title: string;
+  description: string;
+  category: string;
+  model: string;
+  aspect_ratio: string;
+  style: string;
+  image_url: string;
+  image_urls?: string[] | null;
+  tags: string[] | null;
+  created_at: string;
+  profiles?: { nickname: string } | { nickname: string }[] | null;
+};
+
+type PromptVersionRow = {
+  id: string;
+  label: string;
+  language: "ko" | "en" | "mixed" | "negative" | "settings";
+  body: string;
+};
+
+function getProfileNickname(profile: UploadedImagePostRow["profiles"]) {
+  if (Array.isArray(profile)) return profile[0]?.nickname || "회원";
+  return profile?.nickname || "회원";
+}
+
+function getLanguageLabel(language: PromptVersionRow["language"]) {
+  if (language === "ko") return "한국어";
+  if (language === "en") return "영어";
+  if (language === "negative") return "네거티브";
+  if (language === "settings") return "설정";
+  return "한영 혼합";
+}
+
+export default function UploadedImageDetailPage() {
+  const params = useParams<{ id: string }>();
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const [post, setPost] = useState<UploadedImagePostRow | null>(null);
+  const [versions, setVersions] = useState<PromptVersionRow[]>([]);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      setMessage("Supabase 환경변수가 필요합니다.");
+      return;
+    }
+
+    let isMounted = true;
+    const client = supabase;
+
+    async function loadPost() {
+      setIsLoading(true);
+
+      const initialPostResult = await client
+        .from("image_posts")
+        .select(
+          "id, author_id, title, description, category, model, aspect_ratio, style, image_url, image_urls, tags, created_at, profiles(nickname)",
+        )
+        .eq("id", params.id)
+        .eq("is_hidden", false)
+        .maybeSingle();
+
+      let postData = initialPostResult.data as UploadedImagePostRow | null;
+      let postError = initialPostResult.error;
+
+      if (postError?.message.includes("image_urls")) {
+        const retryResult = await client
+          .from("image_posts")
+          .select(
+            "id, author_id, title, description, category, model, aspect_ratio, style, image_url, tags, created_at, profiles(nickname)",
+          )
+          .eq("id", params.id)
+          .eq("is_hidden", false)
+          .maybeSingle();
+
+        postData = retryResult.data as UploadedImagePostRow | null;
+        postError = retryResult.error;
+      }
+
+      const versionResult = await client
+        .from("prompt_versions")
+        .select("id, label, language, body")
+        .eq("image_post_id", params.id)
+        .order("created_at", { ascending: true });
+
+      if (!isMounted) return;
+
+      if (postError) {
+        setMessage(postError.message);
+      }
+
+      setPost(postData);
+      setVersions((versionResult.data ?? []) as PromptVersionRow[]);
+      setIsLoading(false);
+    }
+
+    loadPost();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [params.id, supabase]);
+
+  const copyPrompt = async (text: string, key: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    window.setTimeout(() => setCopiedKey(null), 1400);
+  };
+
+  const images = post?.image_urls && post.image_urls.length > 0 ? post.image_urls : post ? [post.image_url] : [];
+  const authorName = post ? getProfileNickname(post.profiles) : "회원";
+
+  return (
+    <main className="site-shell dc-shell">
+      <header className="topbar dc-topbar">
+        <Link className="brand dc-brand" href="/">
+          <span className="brand-mark">
+            <img className="brand-logo" src="/logo.png" alt="" />
+          </span>
+          <span>
+            <strong>프롬프트랩</strong>
+            <small>AI 이미지 갤러리</small>
+          </span>
+        </Link>
+        <nav className="topnav dc-topnav" aria-label="주요 메뉴">
+          <Link href="/">이미지</Link>
+          <Link href="/boards">게시판</Link>
+          <Link href="/saved">저장함</Link>
+          <Link href="/upload">업로드</Link>
+          <AuthControls />
+        </nav>
+      </header>
+
+      <section className="prompt-detail-page">
+        <Link href="/" className="back-link">
+          <ArrowLeft size={17} aria-hidden="true" />
+          목록으로
+        </Link>
+
+        {isLoading && <p className="dc-empty-message">불러오는 중입니다.</p>}
+        {!isLoading && message && <p className="dc-empty-message">{message}</p>}
+        {!isLoading && !post && !message && (
+          <p className="dc-empty-message">이미지 게시글을 찾을 수 없습니다.</p>
+        )}
+
+        {post && (
+          <>
+            <div className="detail-main">
+              <article className="detail-article">
+                <div className="image-viewer uploaded-image-viewer">
+                  {images.map((imageUrl, index) => (
+                    <img
+                      key={imageUrl}
+                      className="detail-hero-image"
+                      src={imageUrl}
+                      alt={`${post.title} 이미지 ${index + 1}`}
+                    />
+                  ))}
+                </div>
+                <div className="detail-article-body">
+                  <div className="card-meta">
+                    <span>{post.category}</span>
+                    <span>{post.model}</span>
+                    <span>{post.aspect_ratio}</span>
+                  </div>
+                  <h1>{post.title}</h1>
+                  <p>{post.description || "설명이 없습니다."}</p>
+                  <div className="author-line dc-author-line">
+                    <span>
+                      <UserRound size={14} aria-hidden="true" /> 작성자 @{authorName}
+                    </span>
+                    <span>{images.length}장</span>
+                  </div>
+                </div>
+              </article>
+
+              <section className="prompt-detail-section">
+                <div className="section-heading">
+                  <h2>프롬프트 원문</h2>
+                  <span>{versions.length}개 버전</span>
+                </div>
+                <div className="prompt-versions">
+                  {versions.length > 0 ? (
+                    versions.map((version) => (
+                      <section className="prompt-version" key={version.id}>
+                        <div className="prompt-version-header">
+                          <div>
+                            <strong>{version.label}</strong>
+                            <span>{getLanguageLabel(version.language)}</span>
+                          </div>
+                          <button type="button" onClick={() => copyPrompt(version.body, version.id)}>
+                            {copiedKey === version.id ? (
+                              <Check size={16} aria-hidden="true" />
+                            ) : (
+                              <Copy size={16} aria-hidden="true" />
+                            )}
+                            {copiedKey === version.id ? "복사됨" : "복사"}
+                          </button>
+                        </div>
+                        <div className="prompt-body">{version.body}</div>
+                      </section>
+                    ))
+                  ) : (
+                    <p className="dc-empty-message">등록된 프롬프트 원문이 없습니다.</p>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            <aside className="detail-side">
+              <div className="spec-grid">
+                <span>작성자</span>
+                <strong>@{authorName}</strong>
+                <span>모델</span>
+                <strong>{post.model}</strong>
+                <span>이미지</span>
+                <strong>{images.length}장</strong>
+                <span>비율</span>
+                <strong>{post.aspect_ratio}</strong>
+                <span>스타일</span>
+                <strong>{post.style}</strong>
+              </div>
+              <div className="tag-row">
+                {(post.tags ?? []).map((tag) => (
+                  <span key={tag}>#{tag}</span>
+                ))}
+              </div>
+            </aside>
+          </>
+        )}
+      </section>
+    </main>
+  );
+}

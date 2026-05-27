@@ -25,6 +25,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.5,
     },
+    {
+      url: `${siteUrl}/upload`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
     ...prompts.map((prompt) => ({
       url: `${siteUrl}/prompts/${prompt.id}`,
       lastModified: now,

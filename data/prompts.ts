@@ -17,6 +17,7 @@ export type Prompt = {
   language: "영어" | "한국어" | "한영 혼합";
   image: string;
   tags: string[];
+  authorName?: string;
 };
 
 export const categories = [

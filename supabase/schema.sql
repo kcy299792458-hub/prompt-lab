@@ -14,6 +14,20 @@ set
   file_size_limit = 5242880,
   allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'prompt-images',
+  'prompt-images',
+  true,
+  10485760,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update
+set
+  public = true,
+  file_size_limit = 10485760,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
 create type public.user_role as enum ('user', 'admin');
 create type public.post_kind as enum ('image', 'board');
 create type public.prompt_language as enum ('ko', 'en', 'mixed', 'negative', 'settings');
@@ -68,6 +82,7 @@ create table public.image_posts (
   aspect_ratio text not null default '',
   style text not null default '',
   image_url text not null,
+  image_urls text[] not null default '{}',
   tags text[] not null default '{}',
   is_hidden boolean not null default false,
   created_at timestamptz not null default now(),
@@ -320,6 +335,16 @@ create policy "anyone can upload board images"
 on storage.objects for insert
 to anon, authenticated
 with check (bucket_id = 'board-images');
+
+create policy "prompt images are readable"
+on storage.objects for select
+to anon, authenticated
+using (bucket_id = 'prompt-images');
+
+create policy "logged in users can upload prompt images"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'prompt-images');
 
 create or replace function public.create_guest_board_post(
   p_category text,

@@ -352,6 +352,7 @@ export default function BoardsPage() {
           <Link href="/">이미지</Link>
           <Link href="/boards">게시판</Link>
           <Link href="/saved">저장함</Link>
+          <Link href="/upload">업로드</Link>
           <AuthControls />
         </nav>
       </header>

@@ -10,6 +10,7 @@ import {
   Copy,
   Heart,
   MessageCircle,
+  UserRound,
 } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import { getPromptVersions } from "@/data/community";
@@ -63,6 +64,7 @@ export default function PromptDetailPage() {
   );
 
   const promptVersions = prompt ? getPromptVersions(prompt) : [];
+  const authorName = prompt?.authorName || "운영자";
 
   const loadInteractions = async (currentVisitorKey = visitorKey) => {
     if (!supabase || !prompt) return;
@@ -221,6 +223,7 @@ export default function PromptDetailPage() {
           <Link href="/">갤러리</Link>
           <Link href="/boards">게시판</Link>
           <Link href="/saved">저장함</Link>
+          <Link href="/upload">업로드</Link>
           <AuthControls />
         </nav>
       </header>
@@ -248,6 +251,12 @@ export default function PromptDetailPage() {
               </div>
               <h1>{prompt.title}</h1>
               <p>{prompt.description}</p>
+              <div className="author-line dc-author-line">
+                <span>
+                  <UserRound size={14} aria-hidden="true" /> 작성자 @{authorName}
+                </span>
+                <span>예시 게시글</span>
+              </div>
               <div className="detail-actions">
                 <button
                   className={`icon-action wide${activeReactions.like ? " active" : ""}`}
@@ -373,6 +382,8 @@ export default function PromptDetailPage() {
           <div className="spec-grid">
             <span>모델</span>
             <strong>{prompt.model}</strong>
+            <span>작성자</span>
+            <strong>@{authorName}</strong>
             <span>비율</span>
             <strong>{prompt.aspectRatio}</strong>
             <span>스타일</span>
