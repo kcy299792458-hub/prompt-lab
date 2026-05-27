@@ -1,5 +1,6 @@
 "use client";
 
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -11,13 +12,187 @@ import {
   UserRound,
 } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
-import { boardPosts } from "@/data/boards";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+type BoardPostRow = {
+  id: string;
+  author_id: string | null;
+  guest_nickname: string | null;
+  category: string;
+  title: string;
+  body: string;
+  created_at: string;
+  is_hidden: boolean;
+};
+
+type CommentRow = {
+  id: string;
+  author_id: string | null;
+  guest_nickname: string | null;
+  body: string;
+  created_at: string;
+};
+
+type SessionUser = {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    nickname?: string;
+  };
+};
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function getAuthorName(item: { guest_nickname: string | null }) {
+  return item.guest_nickname || "회원";
+}
 
 export default function BoardPostPage() {
   const params = useParams<{ id: string }>();
-  const post = boardPosts.find((item) => item.id === Number(params.id));
+  const [post, setPost] = useState<BoardPostRow | null>(null);
+  const [bestPosts, setBestPosts] = useState<BoardPostRow[]>([]);
+  const [comments, setComments] = useState<CommentRow[]>([]);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [commentForm, setCommentForm] = useState({
+    body: "",
+    guestNickname: "",
+    password: "",
+  });
 
-  if (!post) {
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+
+  const loadPost = async () => {
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    const [postResult, commentResult, bestResult] = await Promise.all([
+      supabase
+        .from("board_posts")
+        .select("id, author_id, guest_nickname, category, title, body, created_at, is_hidden")
+        .eq("id", params.id)
+        .eq("is_hidden", false)
+        .maybeSingle(),
+      supabase
+        .from("comments")
+        .select("id, author_id, guest_nickname, body, created_at")
+        .eq("board_post_id", params.id)
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("board_posts")
+        .select("id, author_id, guest_nickname, category, title, body, created_at, is_hidden")
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: false })
+        .limit(8),
+    ]);
+
+    if (postResult.error) {
+      setMessage(postResult.error.message);
+    }
+
+    setPost((postResult.data as BoardPostRow | null) ?? null);
+    setComments((commentResult.data ?? []) as CommentRow[]);
+    setBestPosts((bestResult.data ?? []) as BoardPostRow[]);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
+
+    loadPost();
+
+    supabase.auth.getSession().then(({ data }) => {
+      setSessionUser((data.session?.user as SessionUser | undefined) ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionUser((session?.user as SessionUser | undefined) ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [params.id, supabase]);
+
+  const submitComment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!supabase || !post) {
+      setMessage("댓글을 저장할 수 없습니다.");
+      return;
+    }
+
+    if (!commentForm.body.trim()) {
+      setMessage("댓글 내용을 입력하세요.");
+      return;
+    }
+
+    setMessage("");
+
+    if (sessionUser) {
+      const { error } = await supabase.from("comments").insert({
+        author_id: sessionUser.id,
+        board_post_id: post.id,
+        body: commentForm.body.trim(),
+      });
+
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase.rpc("create_guest_board_comment", {
+        p_board_post_id: post.id,
+        p_body: commentForm.body.trim(),
+        p_guest_nickname: commentForm.guestNickname.trim(),
+        p_password: commentForm.password,
+      });
+
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+    }
+
+    setCommentForm({
+      body: "",
+      guestNickname: "",
+      password: "",
+    });
+    await loadPost();
+  };
+
+  if (!supabase) {
+    return (
+      <main className="site-shell dc-shell">
+        <section className="not-found-panel">
+          <p className="section-kicker">Setup</p>
+          <h1>Supabase 환경변수가 필요합니다.</h1>
+          <Link href="/boards" className="primary-button">
+            게시판으로
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  if (!isLoading && !post) {
     return (
       <main className="site-shell dc-shell">
         <section className="not-found-panel">
@@ -30,10 +205,6 @@ export default function BoardPostPage() {
       </main>
     );
   }
-
-  const bestPosts = [...boardPosts]
-    .sort((a, b) => b.views + b.likes * 8 + b.comments.length * 30 - (a.views + a.likes * 8 + a.comments.length * 30))
-    .slice(0, 8);
 
   return (
     <main className="site-shell dc-shell">
@@ -60,59 +231,97 @@ export default function BoardPostPage() {
           게시판으로
         </Link>
 
-        <div className="dc-board-detail-layout">
-          <article className="board-detail-article dc-board-article">
-            <div className="dc-article-head">
-              <span className="board-label">{post.category}</span>
-              <h1>{post.title}</h1>
-            </div>
-            <div className="board-post-meta dc-article-meta">
-              <span>
-                <UserRound size={14} aria-hidden="true" /> @{post.author}
-              </span>
-              <span>{post.createdAt}</span>
-              <span>
-                <Eye size={14} aria-hidden="true" /> {post.views}
-              </span>
-              <span>
-                <Heart size={14} aria-hidden="true" /> {post.likes}
-              </span>
-              <span>
-                <MessageCircle size={14} aria-hidden="true" /> {post.comments.length}
-              </span>
-            </div>
-            <p>{post.body}</p>
-          </article>
+        {post && (
+          <div className="dc-board-detail-layout">
+            <article className="board-detail-article dc-board-article">
+              <div className="dc-article-head">
+                <span className="board-label">{post.category}</span>
+                <h1>{post.title}</h1>
+              </div>
+              <div className="board-post-meta dc-article-meta">
+                <span>
+                  <UserRound size={14} aria-hidden="true" /> @{getAuthorName(post)}
+                </span>
+                <span>{formatDate(post.created_at)}</span>
+                <span>
+                  <Eye size={14} aria-hidden="true" /> 0
+                </span>
+                <span>
+                  <Heart size={14} aria-hidden="true" /> 0
+                </span>
+                <span>
+                  <MessageCircle size={14} aria-hidden="true" /> {comments.length}
+                </span>
+              </div>
+              <p>{post.body}</p>
+            </article>
 
-          <aside className="dc-rank-box dc-board-best" aria-label="실시간 베스트">
-            <div className="dc-rank-head">
-              <strong>실시간 베스트</strong>
-              <span>글</span>
-            </div>
-            <ol>
-              {bestPosts.map((item, index) => (
-                <li key={item.id}>
-                  <span className="dc-rank-num">{index + 1}</span>
-                  <Link href={`/boards/${item.id}`}>{item.title}</Link>
-                  <small>{item.views}</small>
-                </li>
-              ))}
-            </ol>
-          </aside>
-        </div>
+            <aside className="dc-rank-box dc-board-best" aria-label="실시간 베스트">
+              <div className="dc-rank-head">
+                <strong>실시간 베스트</strong>
+                <span>글</span>
+              </div>
+              <ol>
+                {bestPosts.map((item, index) => (
+                  <li key={item.id}>
+                    <span className="dc-rank-num">{index + 1}</span>
+                    <Link href={`/boards/${item.id}`}>{item.title}</Link>
+                    <small>{formatDate(item.created_at)}</small>
+                  </li>
+                ))}
+              </ol>
+            </aside>
+          </div>
+        )}
 
         <section className="prompt-detail-section dc-comment-section">
           <div className="section-heading">
             <h2>댓글</h2>
-            <span>{post.comments.length}개</span>
+            <span>{comments.length}개</span>
           </div>
+
+          <form className="dc-comment-form" onSubmit={submitComment}>
+            {!sessionUser && (
+              <div className="dc-write-grid">
+                <input
+                  value={commentForm.guestNickname}
+                  onChange={(event) =>
+                    setCommentForm({ ...commentForm, guestNickname: event.target.value })
+                  }
+                  placeholder="닉네임"
+                  aria-label="닉네임"
+                />
+                <input
+                  value={commentForm.password}
+                  onChange={(event) =>
+                    setCommentForm({ ...commentForm, password: event.target.value })
+                  }
+                  placeholder="수정/삭제 비밀번호"
+                  type="password"
+                  aria-label="수정/삭제 비밀번호"
+                />
+              </div>
+            )}
+            <textarea
+              value={commentForm.body}
+              onChange={(event) => setCommentForm({ ...commentForm, body: event.target.value })}
+              placeholder="댓글을 입력하세요"
+              aria-label="댓글"
+            />
+            <button className="primary-button dc-write-submit" type="submit">
+              댓글 등록
+            </button>
+          </form>
+
+          {message && <p className="dc-status-message">{message}</p>}
+
           <div className="comment-list full">
-            {post.comments.length > 0 ? (
-              post.comments.map((comment) => (
-                <article key={`${comment.author}-${comment.time}`}>
+            {comments.length > 0 ? (
+              comments.map((comment) => (
+                <article key={comment.id}>
                   <div>
-                    <strong>@{comment.author}</strong>
-                    <span>{comment.time}</span>
+                    <strong>@{getAuthorName(comment)}</strong>
+                    <span>{formatDate(comment.created_at)}</span>
                   </div>
                   <p>{comment.body}</p>
                 </article>

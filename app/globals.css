@@ -614,6 +614,70 @@
   font-size: 13px;
 }
 
+.dc-write-panel,
+.dc-comment-form {
+  background: #ffffff;
+  border: 1px solid #c7cbd0;
+  border-top: 0;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.dc-write-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 120px 140px 160px minmax(0, 1fr);
+}
+
+.dc-comment-form .dc-write-grid {
+  grid-template-columns: 140px 160px;
+}
+
+.dc-write-panel input,
+.dc-write-panel select,
+.dc-write-panel textarea,
+.dc-comment-form input,
+.dc-comment-form textarea {
+  background: #ffffff;
+  border: 1px solid #c9cec4;
+  color: #20231f;
+  font: inherit;
+  font-size: 13px;
+  outline: 0;
+  padding: 8px;
+  width: 100%;
+}
+
+.dc-write-panel textarea,
+.dc-comment-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.dc-comment-form textarea {
+  min-height: 76px;
+}
+
+.dc-write-submit {
+  border-radius: 0;
+  font-size: 13px;
+  justify-self: end;
+  min-height: 34px;
+  padding: 0 14px;
+}
+
+.dc-status-message,
+.dc-empty-message {
+  background: #fff;
+  border: 1px solid #c7cbd0;
+  border-top: 0;
+  color: #555;
+  font-size: 13px;
+  margin: 0;
+  padding: 12px;
+}
+
 @media (max-width: 1100px) {
   .dc-board-page-layout,
   .dc-board-detail-layout {
@@ -633,6 +697,11 @@
   .dc-post-row {
     grid-template-columns: 64px minmax(0, 1fr);
     padding: 8px 0;
+  }
+
+  .dc-write-grid,
+  .dc-comment-form .dc-write-grid {
+    grid-template-columns: 1fr;
   }
 
   .dc-post-row > small,
