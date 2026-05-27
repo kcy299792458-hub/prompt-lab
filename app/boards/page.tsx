@@ -29,6 +29,7 @@ type BoardPostRow = {
   image_urls?: string[] | null;
   created_at: string;
   is_hidden: boolean;
+  profiles?: ProfileRelation;
 };
 
 type BoardCommentActivityRow = {
@@ -37,11 +38,14 @@ type BoardCommentActivityRow = {
   guest_nickname: string | null;
   body: string;
   created_at: string;
+  profiles?: ProfileRelation;
 };
 
 type BoardReactionRow = {
   board_post_id: string | null;
 };
+
+type ProfileRelation = { nickname: string } | { nickname: string }[] | null;
 
 type SessionUser = {
   id: string;
@@ -60,12 +64,17 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function getAuthorName(post: BoardPostRow) {
-  return post.guest_nickname || "회원";
+function getProfileNickname(profile: ProfileRelation | undefined) {
+  if (Array.isArray(profile)) return profile[0]?.nickname || "회원";
+  return profile?.nickname || "회원";
+}
+
+function getAuthorName(item: { guest_nickname: string | null; profiles?: ProfileRelation }) {
+  return item.guest_nickname || getProfileNickname(item.profiles);
 }
 
 function getCommentAuthorName(comment: BoardCommentActivityRow) {
-  return comment.guest_nickname || "회원";
+  return getAuthorName(comment);
 }
 
 function getConceptScore(post: BoardPostRow, recommends: number, comments: number) {
@@ -115,13 +124,13 @@ export default function BoardsPage() {
     const [commentResult, reactionResult, initialPostResult] = await Promise.all([
       supabase
         .from("comments")
-        .select("id, board_post_id, guest_nickname, body, created_at")
+        .select("id, board_post_id, guest_nickname, body, created_at, profiles(nickname)")
         .eq("is_hidden", false)
         .order("created_at", { ascending: false }),
       supabase.from("board_reactions").select("board_post_id").eq("kind", "recommend"),
       supabase
         .from("board_posts")
-        .select("id, author_id, guest_nickname, category, title, body, image_urls, created_at, is_hidden")
+        .select("id, author_id, guest_nickname, category, title, body, image_urls, created_at, is_hidden, profiles(nickname)")
         .eq("is_hidden", false)
         .order("created_at", { ascending: false }),
     ]);
@@ -132,7 +141,7 @@ export default function BoardsPage() {
     if (postError?.message.includes("image_urls")) {
       const retryResult = await supabase
         .from("board_posts")
-        .select("id, author_id, guest_nickname, category, title, body, created_at, is_hidden")
+        .select("id, author_id, guest_nickname, category, title, body, created_at, is_hidden, profiles(nickname)")
         .eq("is_hidden", false)
         .order("created_at", { ascending: false });
 
@@ -608,7 +617,7 @@ export default function BoardsPage() {
           <aside className="dc-board-side-stack" aria-label="게시판 랭킹과 최근 댓글">
             <section className="dc-rank-box dc-board-best">
               <div className="dc-rank-head">
-                <strong>실시간 개념글</strong>
+                <strong>실시간 인기글</strong>
                 <span>추천+댓글</span>
               </div>
               <ol>
@@ -623,7 +632,7 @@ export default function BoardsPage() {
                     </li>
                   ))
                 ) : (
-                  <li className="dc-rank-empty">아직 개념글이 없습니다</li>
+                  <li className="dc-rank-empty">아직 인기글이 없습니다</li>
                 )}
               </ol>
             </section>
