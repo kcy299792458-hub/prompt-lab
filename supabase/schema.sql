@@ -14,6 +14,36 @@ create table public.profiles (
   updated_at timestamptz not null default now()
 );
 
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  base_nickname text;
+begin
+  base_nickname := coalesce(
+    nullif(new.raw_user_meta_data ->> 'nickname', ''),
+    split_part(new.email, '@', 1),
+    'user'
+  );
+
+  insert into public.profiles (id, nickname)
+  values (
+    new.id,
+    left(regexp_replace(base_nickname, '[^a-zA-Z0-9가-힣_]', '', 'g') || '_' || left(new.id::text, 6), 24)
+  )
+  on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute function public.handle_new_user();
+
 create table public.image_posts (
   id uuid primary key default gen_random_uuid(),
   author_id uuid not null references public.profiles(id) on delete cascade,

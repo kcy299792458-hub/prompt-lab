@@ -15,6 +15,9 @@
 - 임시 `localStorage` 로그인 제거 완료
 - Supabase DB/RLS 설계 파일 추가: `supabase/schema.sql`
 - 실서비스 전환 문서 추가: `docs/REAL_SERVICE_PLAN.md`
+- `@supabase/supabase-js` 설치 완료
+- Supabase 브라우저 클라이언트 추가: `lib/supabase/client.ts`
+- 로그인 UI를 Supabase 이메일/비밀번호 로그인 구조로 교체
 
 ## 지금까지 한 일
 
@@ -33,8 +36,9 @@
 1. Supabase 프로젝트를 생성한다.
 2. Supabase SQL Editor에서 `supabase/schema.sql`을 실행한다.
 3. Supabase URL과 anon key를 `.env.local`에 넣는다.
-4. `@supabase/supabase-js`를 설치한다.
-5. 실제 로그인, 글쓰기, 댓글 저장을 연결한다.
+4. Vercel 환경변수에도 Supabase URL과 anon key를 넣는다.
+5. 실제 로그인 테스트를 한다.
+6. 글쓰기, 댓글 저장을 연결한다.
 
 ## Vercel 설정값
 
