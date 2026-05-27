@@ -49,9 +49,9 @@ export default function PromptDetailPage() {
   };
 
   return (
-    <main className="site-shell">
-      <header className="topbar">
-        <Link className="brand" href="/">
+    <main className="site-shell dc-shell">
+      <header className="topbar dc-topbar">
+        <Link className="brand dc-brand" href="/">
           <span className="brand-mark">
             <img className="brand-logo" src="/logo.png" alt="" />
           </span>
@@ -60,7 +60,7 @@ export default function PromptDetailPage() {
             <small>Image prompt archive</small>
           </span>
         </Link>
-        <nav className="topnav" aria-label="주요 메뉴">
+        <nav className="topnav dc-topnav" aria-label="주요 메뉴">
           <Link href="/">갤러리</Link>
           <Link href="/boards">게시판</Link>
           <AuthControls />
