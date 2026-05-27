@@ -11,6 +11,10 @@
 - GitHub 저장소: `https://github.com/kcy299792458-hub/prompt-lab`
 - Vercel 배포 완료
 - 공개 주소: `https://prompt-lab-drab-xi.vercel.app`
+- 실서비스 전환 준비 시작
+- 임시 `localStorage` 로그인 제거 완료
+- Supabase DB/RLS 설계 파일 추가: `supabase/schema.sql`
+- 실서비스 전환 문서 추가: `docs/REAL_SERVICE_PLAN.md`
 
 ## 지금까지 한 일
 
@@ -26,9 +30,11 @@
 
 ## 다음에 바로 할 일
 
-1. 공개 주소 `https://prompt-lab-drab-xi.vercel.app`를 열어본다.
-2. 홈, 게시판, 상세 페이지가 정상인지 확인한다.
-3. 다음 개발 단계로 Supabase 실제 로그인/글쓰기/댓글 저장을 붙인다.
+1. Supabase 프로젝트를 생성한다.
+2. Supabase SQL Editor에서 `supabase/schema.sql`을 실행한다.
+3. Supabase URL과 anon key를 `.env.local`에 넣는다.
+4. `@supabase/supabase-js`를 설치한다.
+5. 실제 로그인, 글쓰기, 댓글 저장을 연결한다.
 
 ## Vercel 설정값
 
@@ -54,12 +60,13 @@ Output Directory: 비워둠
 현재 사이트는 공개 데모다. 진짜 커뮤니티가 되려면 아래 기능이 필요하다.
 
 1. Supabase 프로젝트 생성
-2. 실제 회원가입/로그인 연결
-3. 게시글 DB 저장
-4. 댓글 DB 저장
-5. 이미지 업로드 저장소 연결
-6. 관리자 삭제/차단 기능
-7. 신고 기능
+2. `supabase/schema.sql` 실행
+3. 실제 회원가입/로그인 연결
+4. 게시글 DB 저장
+5. 댓글 DB 저장
+6. 이미지 업로드 저장소 연결
+7. 관리자 삭제/차단 기능
+8. 신고 기능
 
 ## 다시 시작할 때 Codex에게 말할 내용
 
