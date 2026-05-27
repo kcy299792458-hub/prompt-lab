@@ -41,7 +41,9 @@ type RequestPostRow = {
   id: string;
   title: string;
   guest_nickname: string | null;
+  status: "open" | "resolved";
   created_at: string;
+  profiles?: { nickname: string } | { nickname: string }[] | null;
 };
 
 type GalleryItem = {
@@ -185,12 +187,11 @@ export default function Home() {
           .order("created_at", { ascending: false })
           .limit(5),
         client
-          .from("board_posts")
-          .select("id, title, guest_nickname, created_at")
+          .from("prompt_requests")
+          .select("id, title, guest_nickname, status, created_at, profiles(nickname)")
           .eq("is_hidden", false)
-          .eq("category", "질문")
           .order("created_at", { ascending: false })
-          .limit(5),
+          .limit(8),
       ]);
 
       if (!isMounted) return;
@@ -362,6 +363,7 @@ export default function Home() {
         <nav className="topnav dc-topnav" aria-label="주요 메뉴">
           <a href="#gallery">이미지</a>
           <Link href="/boards">게시판</Link>
+          <Link href="/requests">요청</Link>
           <Link href="/saved">저장함</Link>
           <Link href="/upload">업로드</Link>
           <AuthControls />
@@ -431,8 +433,8 @@ export default function Home() {
               requestPosts.map((post, index) => (
                 <li key={post.id}>
                   <span className="dc-rank-num">{index + 1}</span>
-                  <Link href={`/boards/${post.id}`}>{post.title}</Link>
-                  <small>@{post.guest_nickname || "회원"}</small>
+                  <Link href={`/requests/${post.id}`}>{post.title}</Link>
+                  <small>{post.status === "resolved" ? "해결" : "미해결"}</small>
                 </li>
               ))
             ) : (
