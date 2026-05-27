@@ -536,7 +536,7 @@ Steps: 25, Seed: 83455220128015, Model: sd_xl_base_1.0_0.9vae, Size: 1080x1920, 
   },
   {
     id: 34,
-    title: "아날로그 호러: 새벽 아파트 복도",
+    title: "새벽 아파트 복도",
     description: "2000년대 초 피쳐폰으로 찍힌 듯한 한국 구형 아파트 복도와, 어둠 속에 겨우 보이는 실루엣.",
     body: `(found photo:1.4), (old nokia phone camera:1.3), (2002, 2003 digital photo:1.2), low resolution, heavy jpeg compression artifact, digital noise, grain, fluorescent light, yellow-green tint, underexposed shadows, blown highlights, lens distortion, weak vignette, chromatic aberration, (korean apartment corridor:1.4), brutalist concrete hallway, old linoleum floor, brown steel doors, flickering light, dark end of hallway, (silhouette barely visible in darkness:1.3), human figure, tilted head, white chrysanthemum wreath against one door, cardboard boxes, old umbrella, (liminal space:1.2), (uncanny:1.3), subtle horror, something wrong, eerie, unsettling, backrooms aesthetic, no people visible clearly`,
     promptVersions: [
@@ -568,7 +568,7 @@ Negative: (best quality, masterpiece, 8k, sharp, detailed:1.5), bright, clean, m
   },
   {
     id: 35,
-    title: "아날로그 호러: 방과 후 수영장",
+    title: "방과 후 수영장",
     description: "오래된 일본 초등학교 수영장 아래에 설명하기 어려운 하얀 형체가 잠긴 장면.",
     body: `(found photo:1.4), (2001 cheap digital camera:1.3), low megapixel, heavy noise, soft focus, overexposed whites, cyan-tinted shadows, jpeg artifact, slight motion blur, (japanese elementary school outdoor swimming pool:1.4), still water surface, old blue tile, mossy concrete edge, half-open locker room window, blue vinyl hose in pool, small swim cap left on ground, summer afternoon haze, (something submerged in deep end:1.5), white elongated shape underwater, (vaguely human silhouette beneath surface:1.4), photographer shadow visible in water reflection, (liminal space:1.2), (uncanny:1.4), dread, subtle horror, ordinary scene with one impossible detail`,
     promptVersions: [
@@ -600,7 +600,7 @@ Negative: (masterpiece, sharp, 8k, hdr:1.5), monster, ghost visible clearly, blo
   },
   {
     id: 36,
-    title: "아날로그 호러: 지하 주차장 의자",
+    title: "지하 주차장 의자",
     description: "낮인데도 한밤처럼 보이는 한국 아파트 지하 주차장, 빈 의자와 검은 비닐봉지.",
     body: `(found photo:1.4), (2005 camera phone photo:1.3), low res, digital noise, flash photography, blown highlights near camera, deep darkness beyond flash range, jpeg compression artifact, blue-tinted blacks, (korean underground apartment parking lot:1.4), 1990s concrete construction, yellow stripe reflective tape on pillars, parking lot line markings, early 2000s korean cars parked, hyundai avante, fluorescent ceiling lights, (folding chair alone in empty parking space:1.4), black plastic bag tied to chair leg, handwritten note on pillar illegible due to low resolution, (car idling in dark far end of garage:1.3), faint exhaust smoke, liminal space, uncanny, dread, subtle horror, daytime but feels like midnight, photographer unknown reason for photo`,
     promptVersions: [
@@ -632,7 +632,7 @@ Negative: (best quality, sharp, masterpiece:1.5), bright parking lot, modern bui
   },
   {
     id: 37,
-    title: "아날로그 호러: 모두가 같은 곳을 보는 축제",
+    title: "모두가 같은 곳을 보는 축제",
     description: "일본 시골 마쓰리 사진 속 모든 사람이 화면 밖 같은 방향을 바라보는 군중 호러.",
     body: `(found photo:1.4), (2002 budget digicam:1.3), low resolution, noise, grain, soft focus, no flash, twilight, orange streetlamps, blue dusk sky, jpeg artifact, slight motion blur, tourist photo, (japanese rural town summer festival street:1.4), matsuri, yatai food stalls, paper lanterns hanging, people in yukata, all ages crowd, (every single person in photo staring at same direction:1.6), all heads turned left toward camera edge, blank expressions, empty eyes, (nothing visible at left edge of frame, only dark alley:1.3), uncanny, (wrongness:1.5), crowd horror, mass behavior, liminal dread, ordinary festival turned sinister, no blood, no monster`,
     promptVersions: [
@@ -664,7 +664,7 @@ Negative: (sharp, masterpiece, best quality, 8k:1.5), people looking at camera, 
   },
   {
     id: 38,
-    title: "아날로그 호러: 병원 복도의 빈 휠체어",
+    title: "병원 복도의 빈 휠체어",
     description: "한국 지방 병원 복도 중앙의 빈 휠체어와 유리 반사에만 보이는 형체.",
     body: `(found photo:1.4), (2003 camera phone:1.3), low resolution, digital noise, weak flash, overexposed floor tiles near camera, dim fluorescent beyond, yellow-white hospital light, slightly tilted frame, jpeg artifact, (korean regional hospital corridor:1.4), 2000s interior, beige linoleum, multiple closed patient room doors, one door slightly ajar, (single empty wheelchair in center of hallway:1.5), footrests down, patient gown draped over backrest, (nurse station glass window at end of corridor:1.3), (reflection in glass shows standing figure not present in hallway:1.6), vague silhouette in reflection, no clear face, uncanny wrongness, liminal space hospital, subtle dread, something reflected that shouldn't exist`,
     promptVersions: [
@@ -696,7 +696,7 @@ Negative: (masterpiece, sharp, best quality, 8k:1.5), monster clearly visible, b
   },
   {
     id: 39,
-    title: "아날로그 호러: 아무도 밀지 않는 그네",
+    title: "아무도 밀지 않는 그네",
     description: "낮의 한국 시골 놀이터에서 혼자 높이 올라가 있는 그네와 얼굴이 보이지 않는 아이.",
     body: `(found photo:1.4), (late 1990s disposable camera or early digicam:1.3), underexposed, muted colors, low saturation, jpeg artifact in sky area, vignette, slight grain, no flash outdoor, (rural korean playground:1.4), 1990s rusty iron jungle gym, faded paint, cracked concrete ground, one broken swing hanging crooked, clear afternoon sky but oppressive mood, empty surroundings, rice fields beyond, (child on working swing, back to camera:1.5), no face visible, (swing at high arc, feet off ground:1.3), no adult present anywhere, nobody visible in background, no cars, no buildings nearby, (nobody pushing the swing:1.4), self-swinging impossibility, liminal space, rural isolation, child horror, subtle impossibility, uncanny, dread, sunlit wrongness, daytime horror`,
     promptVersions: [
