@@ -425,7 +425,9 @@ export default function Home() {
         <aside className="dc-rank-box">
           <div className="dc-rank-head">
             <strong>프롬프트 요청 게시판</strong>
-            <span>질문</span>
+            <Link className="dc-rank-head-link" href="/requests">
+              바로가기
+            </Link>
           </div>
           <ol>
             {requestPosts.length > 0 ? (

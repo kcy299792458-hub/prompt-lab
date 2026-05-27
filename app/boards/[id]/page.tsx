@@ -6,11 +6,13 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   MessageCircle,
+  ThumbsUp,
   Trash2,
   UserRound,
 } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getPromptLabVisitorKey } from "@/lib/visitor-key";
 
 const boardCategories = ["공지", "자유", "질문", "팁/연구"] as const;
 
@@ -34,6 +36,11 @@ type CommentRow = {
   created_at: string;
 };
 
+type BoardReactionRow = {
+  board_post_id: string | null;
+  visitor_key: string | null;
+};
+
 type SessionUser = {
   id: string;
 };
@@ -51,12 +58,26 @@ function getAuthorName(item: { guest_nickname: string | null }) {
   return item.guest_nickname || "회원";
 }
 
+function getConceptScore(post: BoardPostRow, recommends: number, comments: number) {
+  const engagementScore = recommends * 3 + comments * 2;
+
+  if (engagementScore === 0) return 0;
+
+  const ageHours = Math.max(0, Date.now() - new Date(post.created_at).getTime()) / 3600000;
+  const recentBonus = Math.max(0, 48 - ageHours) / 48;
+
+  return engagementScore + recentBonus;
+}
+
 export default function BoardPostPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [post, setPost] = useState<BoardPostRow | null>(null);
   const [bestPosts, setBestPosts] = useState<BoardPostRow[]>([]);
   const [comments, setComments] = useState<CommentRow[]>([]);
+  const [recommendCounts, setRecommendCounts] = useState<Record<string, number>>({});
+  const [activeRecommendation, setActiveRecommendation] = useState(false);
+  const [visitorKey, setVisitorKey] = useState("");
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -77,7 +98,7 @@ export default function BoardPostPage() {
 
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
-  const loadPost = async () => {
+  const loadPost = async (currentVisitorKey = visitorKey) => {
     if (!supabase) {
       setIsLoading(false);
       return;
@@ -85,7 +106,8 @@ export default function BoardPostPage() {
 
     setIsLoading(true);
 
-    const [initialPostResult, commentResult, bestResult] = await Promise.all([
+    const [initialPostResult, commentResult, bestResult, boardCommentResult, reactionResult] =
+      await Promise.all([
       supabase
         .from("board_posts")
         .select("id, author_id, guest_nickname, category, title, body, image_urls, created_at, is_hidden")
@@ -103,7 +125,9 @@ export default function BoardPostPage() {
         .select("id, author_id, guest_nickname, category, title, body, created_at, is_hidden")
         .eq("is_hidden", false)
         .order("created_at", { ascending: false })
-        .limit(8),
+        .limit(50),
+      supabase.from("comments").select("board_post_id").eq("is_hidden", false),
+      supabase.from("board_reactions").select("board_post_id, visitor_key").eq("kind", "recommend"),
     ]);
 
     let postData = initialPostResult.data as BoardPostRow | null;
@@ -126,9 +150,52 @@ export default function BoardPostPage() {
     }
 
     const nextPost = postData ?? null;
+    const boardCommentCounts: Record<string, number> = {};
+    const boardRecommendCounts: Record<string, number> = {};
+    const reactionRows = (reactionResult.data ?? []) as BoardReactionRow[];
+
+    (boardCommentResult.data ?? []).forEach((comment) => {
+      const postId = comment.board_post_id as string | null;
+      if (!postId) return;
+      boardCommentCounts[postId] = (boardCommentCounts[postId] ?? 0) + 1;
+    });
+
+    if (!reactionResult.error) {
+      reactionRows.forEach((reaction) => {
+        const postId = reaction.board_post_id;
+        if (!postId) return;
+        boardRecommendCounts[postId] = (boardRecommendCounts[postId] ?? 0) + 1;
+      });
+    }
+
+    const rankedPosts = ((bestResult.data ?? []) as BoardPostRow[])
+      .map((item) => ({
+        post: item,
+        score: getConceptScore(
+          item,
+          boardRecommendCounts[item.id] ?? 0,
+          boardCommentCounts[item.id] ?? 0,
+        ),
+      }))
+      .filter((item) => item.score > 0)
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          new Date(b.post.created_at).getTime() - new Date(a.post.created_at).getTime(),
+      )
+      .map((item) => item.post)
+      .slice(0, 8);
+
     setPost(nextPost);
     setComments((commentResult.data ?? []) as CommentRow[]);
-    setBestPosts((bestResult.data ?? []) as BoardPostRow[]);
+    setBestPosts(rankedPosts);
+    setRecommendCounts(boardRecommendCounts);
+    setActiveRecommendation(
+      reactionRows.some(
+        (reaction) =>
+          reaction.board_post_id === params.id && reaction.visitor_key === currentVisitorKey,
+      ),
+    );
 
     if (nextPost) {
       setEditForm((current) => ({
@@ -148,7 +215,9 @@ export default function BoardPostPage() {
       return;
     }
 
-    loadPost();
+    const currentVisitorKey = getPromptLabVisitorKey();
+    setVisitorKey(currentVisitorKey);
+    loadPost(currentVisitorKey);
 
     supabase.auth.getSession().then(({ data }) => {
       setSessionUser((data.session?.user as SessionUser | undefined) ?? null);
@@ -204,7 +273,7 @@ export default function BoardPostPage() {
     }
 
     setCommentForm({ body: "", guestNickname: "", password: "" });
-    await loadPost();
+    await loadPost(visitorKey);
   };
 
   const updateGuestPost = async (event: FormEvent<HTMLFormElement>) => {
@@ -228,7 +297,7 @@ export default function BoardPostPage() {
     setMessage("게시글을 수정했습니다.");
     setIsEditing(false);
     setEditForm({ ...editForm, password: "" });
-    await loadPost();
+    await loadPost(visitorKey);
   };
 
   const deleteGuestPost = async () => {
@@ -262,7 +331,24 @@ export default function BoardPostPage() {
 
     setMessage("댓글을 삭제했습니다.");
     setCommentPasswords({ ...commentPasswords, [commentId]: "" });
-    await loadPost();
+    await loadPost(visitorKey);
+  };
+
+  const toggleRecommendation = async () => {
+    if (!supabase || !post || !visitorKey) return;
+
+    const { data, error } = await supabase.rpc("toggle_board_reaction", {
+      p_board_post_id: post.id,
+      p_visitor_key: visitorKey,
+    });
+
+    if (error) {
+      setMessage("추천 기능을 사용하려면 008 SQL 실행이 필요합니다.");
+      return;
+    }
+
+    setActiveRecommendation(Boolean(data));
+    await loadPost(visitorKey);
   };
 
   if (!supabase) {
@@ -345,6 +431,18 @@ export default function BoardPostPage() {
               )}
               <p className="dc-board-post-body">{post.body}</p>
 
+              <div className="dc-board-reaction-bar">
+                <button
+                  type="button"
+                  className={`dc-recommend-button${activeRecommendation ? " active" : ""}`}
+                  onClick={toggleRecommendation}
+                  aria-pressed={activeRecommendation}
+                >
+                  <ThumbsUp size={16} aria-hidden="true" />
+                  추천 {recommendCounts[post.id] ?? 0}
+                </button>
+              </div>
+
               {!post.author_id && (
                 <div className="dc-owner-tools">
                   <button type="button" onClick={() => setIsEditing((value) => !value)}>
@@ -406,19 +504,23 @@ export default function BoardPostPage() {
               )}
             </article>
 
-            <aside className="dc-rank-box dc-board-best" aria-label="댓글 많은 글">
+            <aside className="dc-rank-box dc-board-best" aria-label="실시간 개념글">
               <div className="dc-rank-head">
-                <strong>댓글 많은 글</strong>
-                <span>글</span>
+                <strong>실시간 개념글</strong>
+                <span>추천</span>
               </div>
               <ol>
-                {bestPosts.map((item, index) => (
-                  <li key={item.id}>
-                    <span className="dc-rank-num">{index + 1}</span>
-                    <Link href={`/boards/${item.id}`}>{item.title}</Link>
-                    <small>{formatDate(item.created_at)}</small>
-                  </li>
-                ))}
+                {bestPosts.length > 0 ? (
+                  bestPosts.map((item, index) => (
+                    <li key={item.id}>
+                      <span className="dc-rank-num">{index + 1}</span>
+                      <Link href={`/boards/${item.id}`}>{item.title}</Link>
+                      <small>{recommendCounts[item.id] ?? 0}</small>
+                    </li>
+                  ))
+                ) : (
+                  <li className="dc-rank-empty">아직 개념글이 없습니다</li>
+                )}
               </ol>
             </aside>
           </div>

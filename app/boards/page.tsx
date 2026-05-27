@@ -7,6 +7,7 @@ import {
   MessageCircle,
   PencilLine,
   Search,
+  ThumbsUp,
   X,
 } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
@@ -30,6 +31,18 @@ type BoardPostRow = {
   is_hidden: boolean;
 };
 
+type BoardCommentActivityRow = {
+  id: string;
+  board_post_id: string | null;
+  guest_nickname: string | null;
+  body: string;
+  created_at: string;
+};
+
+type BoardReactionRow = {
+  board_post_id: string | null;
+};
+
 type SessionUser = {
   id: string;
   email?: string;
@@ -51,11 +64,28 @@ function getAuthorName(post: BoardPostRow) {
   return post.guest_nickname || "회원";
 }
 
+function getCommentAuthorName(comment: BoardCommentActivityRow) {
+  return comment.guest_nickname || "회원";
+}
+
+function getConceptScore(post: BoardPostRow, recommends: number, comments: number) {
+  const engagementScore = recommends * 3 + comments * 2;
+
+  if (engagementScore === 0) return 0;
+
+  const ageHours = Math.max(0, Date.now() - new Date(post.created_at).getTime()) / 3600000;
+  const recentBonus = Math.max(0, 48 - ageHours) / 48;
+
+  return engagementScore + recentBonus;
+}
+
 export default function BoardsPage() {
   const [category, setCategory] = useState<ActiveCategory>("전체");
   const [query, setQuery] = useState("");
   const [posts, setPosts] = useState<BoardPostRow[]>([]);
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [recommendCounts, setRecommendCounts] = useState<Record<string, number>>({});
+  const [recentComments, setRecentComments] = useState<BoardCommentActivityRow[]>([]);
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [isWriteOpen, setIsWriteOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,8 +112,13 @@ export default function BoardsPage() {
 
     setIsLoading(true);
 
-    const [{ data: commentData }, initialPostResult] = await Promise.all([
-      supabase.from("comments").select("board_post_id").eq("is_hidden", false),
+    const [commentResult, reactionResult, initialPostResult] = await Promise.all([
+      supabase
+        .from("comments")
+        .select("id, board_post_id, guest_nickname, body, created_at")
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: false }),
+      supabase.from("board_reactions").select("board_post_id").eq("kind", "recommend"),
       supabase
         .from("board_posts")
         .select("id, author_id, guest_nickname, category, title, body, image_urls, created_at, is_hidden")
@@ -112,15 +147,29 @@ export default function BoardsPage() {
       return;
     }
 
+    const commentRows = (commentResult.data ?? []) as BoardCommentActivityRow[];
+    const reactionRows = (reactionResult.data ?? []) as BoardReactionRow[];
     const counts: Record<string, number> = {};
-    (commentData ?? []).forEach((comment) => {
+    const recommends: Record<string, number> = {};
+
+    commentRows.forEach((comment) => {
       const postId = comment.board_post_id as string | null;
       if (!postId) return;
       counts[postId] = (counts[postId] ?? 0) + 1;
     });
 
+    if (!reactionResult.error) {
+      reactionRows.forEach((reaction) => {
+        const postId = reaction.board_post_id;
+        if (!postId) return;
+        recommends[postId] = (recommends[postId] ?? 0) + 1;
+      });
+    }
+
     setCommentCounts(counts);
+    setRecommendCounts(recommends);
     setPosts((postData ?? []) as BoardPostRow[]);
+    setRecentComments(commentRows.filter((comment) => comment.board_post_id).slice(0, 5));
     setIsLoading(false);
   };
 
@@ -165,12 +214,26 @@ export default function BoardsPage() {
     });
   }, [category, posts, query]);
 
-  const bestPosts = useMemo(
+  const conceptPosts = useMemo(
     () =>
       [...posts]
-        .sort((a, b) => (commentCounts[b.id] ?? 0) - (commentCounts[a.id] ?? 0))
+        .map((post) => ({
+          post,
+          score: getConceptScore(
+            post,
+            recommendCounts[post.id] ?? 0,
+            commentCounts[post.id] ?? 0,
+          ),
+        }))
+        .filter((item) => item.score > 0)
+        .sort(
+          (a, b) =>
+            b.score - a.score ||
+            new Date(b.post.created_at).getTime() - new Date(a.post.created_at).getTime(),
+        )
+        .map((item) => item.post)
         .slice(0, 8),
-    [commentCounts, posts],
+    [commentCounts, posts, recommendCounts],
   );
 
   const resetImages = () => {
@@ -506,6 +569,7 @@ export default function BoardsPage() {
               <span>분류</span>
               <span>제목</span>
               <span>작성자</span>
+              <span>추천</span>
               <span>댓글</span>
             </div>
 
@@ -531,6 +595,9 @@ export default function BoardsPage() {
                   </div>
                   <small>@{getAuthorName(post)}</small>
                   <span>
+                    <ThumbsUp size={13} aria-hidden="true" /> {recommendCounts[post.id] ?? 0}
+                  </span>
+                  <span>
                     <MessageCircle size={13} aria-hidden="true" /> {commentCounts[post.id] ?? 0}
                   </span>
                 </Link>
@@ -538,20 +605,54 @@ export default function BoardsPage() {
             </div>
           </section>
 
-          <aside className="dc-rank-box dc-board-best" aria-label="댓글 많은 글">
-            <div className="dc-rank-head">
-              <strong>댓글 많은 글</strong>
-              <span>글</span>
-            </div>
-            <ol>
-              {bestPosts.map((post, index) => (
-                <li key={post.id}>
-                  <span className="dc-rank-num">{index + 1}</span>
-                  <Link href={`/boards/${post.id}`}>{post.title}</Link>
-                  <small>{commentCounts[post.id] ?? 0}</small>
-                </li>
-              ))}
-            </ol>
+          <aside className="dc-board-side-stack" aria-label="게시판 랭킹과 최근 댓글">
+            <section className="dc-rank-box dc-board-best">
+              <div className="dc-rank-head">
+                <strong>실시간 개념글</strong>
+                <span>추천+댓글</span>
+              </div>
+              <ol>
+                {conceptPosts.length > 0 ? (
+                  conceptPosts.map((post, index) => (
+                    <li key={post.id}>
+                      <span className="dc-rank-num">{index + 1}</span>
+                      <Link href={`/boards/${post.id}`}>{post.title}</Link>
+                      <small>
+                        {recommendCounts[post.id] ?? 0}/{commentCounts[post.id] ?? 0}
+                      </small>
+                    </li>
+                  ))
+                ) : (
+                  <li className="dc-rank-empty">아직 개념글이 없습니다</li>
+                )}
+              </ol>
+            </section>
+
+            <section className="dc-rank-box dc-board-best">
+              <div className="dc-rank-head">
+                <strong>최근 댓글</strong>
+                <span>반응</span>
+              </div>
+              <ol>
+                {recentComments.length > 0 ? (
+                  recentComments.map((comment, index) => {
+                    const linkedPost = posts.find((post) => post.id === comment.board_post_id);
+
+                    return (
+                      <li key={comment.id}>
+                        <span className="dc-rank-num">{index + 1}</span>
+                        <Link href={`/boards/${comment.board_post_id}`}>
+                          {linkedPost?.title || comment.body}
+                        </Link>
+                        <small>@{getCommentAuthorName(comment)}</small>
+                      </li>
+                    );
+                  })
+                ) : (
+                  <li className="dc-rank-empty">아직 댓글이 없습니다</li>
+                )}
+              </ol>
+            </section>
           </aside>
         </div>
       </section>
