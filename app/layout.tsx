@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const siteUrl = "https://prompt-lab-drab-xi.vercel.app";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://prompt-lab-drab-xi.vercel.app"),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "프롬포트랩 - 이미지 프롬프트 커뮤니티",
     template: "%s | 프롬포트랩",
@@ -21,15 +23,24 @@ export const metadata: Metadata = {
   openGraph: {
     title: "프롬포트랩",
     description: "결과로 검증된 이미지 프롬포트 모음",
-    url: "https://prompt-lab-drab-xi.vercel.app",
+    url: siteUrl,
     siteName: "프롬포트랩",
     locale: "ko_KR",
     type: "website",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "프롬포트랩 대표 이미지",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "프롬포트랩",
     description: "결과 이미지와 프롬프트 원문을 함께 보는 이미지 프롬프트 커뮤니티.",
+    images: ["/opengraph-image"],
   },
 };
 
