@@ -117,8 +117,7 @@ export default function Home() {
 
       <section className="dc-headline">
         <div>
-          <h1>결과로 검증된 이미지 프롬포트 모음</h1>
-          <p>이미지 결과, 원문 프롬프트, 모델 정보, 댓글 반응을 한 번에 확인하는 커뮤니티형 아카이브.</p>
+          <h1>잘 뽑힌 이미지엔 이유가 있다</h1>
         </div>
         <label className="dc-search">
           <Search size={17} aria-hidden="true" />
