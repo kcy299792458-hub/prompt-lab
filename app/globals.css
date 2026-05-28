@@ -2753,7 +2753,7 @@ body,
 .admin-list-head,
 .admin-row {
   display: grid;
-  grid-template-columns: 82px minmax(0, 1fr) 110px 100px 76px;
+  grid-template-columns: 82px minmax(0, 1fr) 110px 100px 190px;
 }
 
 .admin-list-head {
@@ -2790,7 +2790,7 @@ body,
 
 .admin-row > span,
 .admin-row > small,
-.admin-row > button {
+.admin-row > .admin-row-actions {
   align-items: center;
   display: flex;
   justify-content: center;
@@ -2832,13 +2832,34 @@ body,
   white-space: nowrap;
 }
 
-.admin-row button {
-  background: #fff7f7;
-  border: 0;
+.admin-row-actions {
   border-left: 1px solid #f0f1f3;
+  gap: 4px;
+  padding: 6px;
+}
+
+.admin-row-actions button {
+  align-items: center;
+  background: #fff7f7;
+  border: 1px solid #efd2d2;
   color: #9a1d1d;
+  display: inline-flex;
   font-size: 12px;
   gap: 4px;
+  min-height: 30px;
+  padding: 0 7px;
+}
+
+.admin-row-actions button:nth-child(2) {
+  background: #f7fbff;
+  border-color: #c9d8ea;
+  color: #28527e;
+}
+
+.admin-row-actions button:nth-child(3) {
+  background: #f7f7f7;
+  border-color: #c7cbd0;
+  color: #555;
 }
 
 .admin-locked {
@@ -3025,6 +3046,117 @@ body,
   margin: 0;
 }
 
+.prompt-version-actions {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.report-widget {
+  align-items: center;
+  display: inline-flex;
+}
+
+.report-widget button.report-trigger {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #c7cbd0;
+  color: #555;
+  display: inline-flex;
+  font-size: 12px;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 9px;
+}
+
+.report-widget button.report-trigger:hover {
+  background: #fff7f7;
+  border-color: #d9b2b2;
+  color: #9a1d1d;
+}
+
+.report-widget.compact button.report-trigger {
+  min-height: 28px;
+  padding: 0 8px;
+}
+
+.dc-board-reaction-bar .report-widget {
+  margin-left: 8px;
+}
+
+.report-panel {
+  background: #ffffff;
+  border: 1px solid #8d9297;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.28);
+  display: grid;
+  gap: 8px;
+  left: 50%;
+  padding: 10px;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(320px, calc(100vw - 28px));
+  z-index: 40;
+}
+
+.report-panel-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.report-panel-head strong {
+  color: #111;
+  font-size: 13px;
+}
+
+.report-panel-head button {
+  align-items: center;
+  background: #f7f7f7;
+  border: 1px solid #c7cbd0;
+  color: #222;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  padding: 0;
+  width: 28px;
+}
+
+.report-panel textarea {
+  background: #ffffff;
+  border: 1px solid #c9cec4;
+  color: #20231f;
+  font: inherit;
+  font-size: 13px;
+  min-height: 100px;
+  outline: 0;
+  padding: 8px;
+  resize: vertical;
+  width: 100%;
+}
+
+.report-submit {
+  align-items: center;
+  background: #31353b;
+  border: 1px solid #31353b;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 12px;
+  gap: 5px;
+  justify-content: center;
+  justify-self: end;
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.report-panel p {
+  color: #555;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+}
+
 .dc-board-write-panel {
   border-top: 0;
   gap: 10px;
@@ -3188,7 +3320,7 @@ body,
   }
 
   .admin-row > small,
-  .admin-row > button {
+  .admin-row > .admin-row-actions {
     border-left: 0;
     justify-content: flex-start;
     min-height: 28px;

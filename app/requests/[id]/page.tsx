@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Copy, MessageCircle, Send, UserRound } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
+import { ReportButton } from "@/app/components/ReportButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type PromptRequestRow = {
@@ -356,6 +357,13 @@ export default function PromptRequestDetailPage() {
                 <button type="button" onClick={() => updateStatus("open")}>
                   미해결
                 </button>
+                <ReportButton
+                  targetType="prompt_request"
+                  targetId={request.id}
+                  targetTitle={request.title}
+                  targetPath={`/requests/${request.id}`}
+                  compact
+                />
               </div>
             </article>
 
@@ -473,13 +481,22 @@ export default function PromptRequestDetailPage() {
                         </strong>
                         <span>{formatDate(answer.created_at)}</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => copyPrompt(answer.prompt_body, answer.id)}
-                      >
-                        <Copy size={16} aria-hidden="true" />
-                        {copiedKey === answer.id ? "복사됨" : "복사"}
-                      </button>
+                      <div className="prompt-version-actions">
+                        <ReportButton
+                          targetType="prompt_request_answer"
+                          targetId={answer.id}
+                          targetTitle={`요청 답변 - ${request.title}`}
+                          targetPath={`/requests/${request.id}`}
+                          compact
+                        />
+                        <button
+                          type="button"
+                          onClick={() => copyPrompt(answer.prompt_body, answer.id)}
+                        >
+                          <Copy size={16} aria-hidden="true" />
+                          {copiedKey === answer.id ? "복사됨" : "복사"}
+                        </button>
+                      </div>
                     </div>
                     <div className="prompt-body">{answer.prompt_body}</div>
                     {(answer.model || answer.settings || answer.negative_prompt || answer.explanation) && (

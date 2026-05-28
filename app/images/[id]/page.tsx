@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Check, Copy, UserRound } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
+import { ReportButton } from "@/app/components/ReportButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type UploadedImagePostRow = {
@@ -184,6 +185,15 @@ export default function UploadedImageDetailPage() {
                       <UserRound size={14} aria-hidden="true" /> 작성자 @{authorName}
                     </span>
                     <span>{images.length}장</span>
+                  </div>
+                  <div className="detail-actions">
+                    <ReportButton
+                      targetType="image_post"
+                      targetId={post.id}
+                      targetTitle={post.title}
+                      targetPath={`/images/${post.id}`}
+                      compact
+                    />
                   </div>
                 </div>
               </article>

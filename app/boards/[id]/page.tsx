@@ -11,6 +11,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
+import { ReportButton } from "@/app/components/ReportButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getPromptLabVisitorKey } from "@/lib/visitor-key";
 
@@ -450,6 +451,13 @@ export default function BoardPostPage() {
                   <ThumbsUp size={16} aria-hidden="true" />
                   추천 {recommendCounts[post.id] ?? 0}
                 </button>
+                <ReportButton
+                  targetType="board_post"
+                  targetId={post.id}
+                  targetTitle={post.title}
+                  targetPath={`/boards/${post.id}`}
+                  compact
+                />
               </div>
 
               {!post.author_id && (
@@ -583,6 +591,13 @@ export default function BoardPostPage() {
                   <div>
                     <strong>@{getAuthorName(comment)}</strong>
                     <span>{formatDate(comment.created_at)}</span>
+                    <ReportButton
+                      targetType="comment"
+                      targetId={comment.id}
+                      targetTitle={`게시판 댓글 - ${post?.title || "게시글"}`}
+                      targetPath={`/boards/${params.id}`}
+                      compact
+                    />
                   </div>
                   <p>{comment.body}</p>
                   {!comment.author_id && (

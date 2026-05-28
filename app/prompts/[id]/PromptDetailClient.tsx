@@ -13,6 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
+import { ReportButton } from "@/app/components/ReportButton";
 import { getPromptVersions } from "@/data/community";
 import { prompts } from "@/data/prompts";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -366,6 +367,13 @@ export default function PromptDetailPage() {
                     <div>
                       <strong>@{comment.guest_nickname}</strong>
                       <span>{formatDate(comment.created_at)}</span>
+                      <ReportButton
+                        targetType="prompt_comment"
+                        targetId={comment.id}
+                        targetTitle={`프롬프트 댓글 - ${prompt.title}`}
+                        targetPath={`/prompts/${prompt.id}`}
+                        compact
+                      />
                     </div>
                     <p>{comment.body}</p>
                   </article>

@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { EyeOff, RefreshCw, Search, ShieldCheck } from "lucide-react";
+import { CheckCircle2, EyeOff, RefreshCw, Search, ShieldCheck, XCircle } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import {
   createSupabaseBrowserClient,
   isSupabaseConfigured,
 } from "@/lib/supabase/client";
 
-type AdminFilter = "all" | "image" | "board" | "comment" | "request";
+type AdminFilter = "all" | "report" | "image" | "board" | "comment" | "request";
 type ModerationTable =
   | "image_posts"
   | "board_posts"
@@ -22,7 +22,7 @@ type ProfileRelation = { nickname: string } | { nickname: string }[] | null;
 
 type ModerationItem = {
   id: string;
-  table: ModerationTable;
+  table?: ModerationTable;
   type: Exclude<AdminFilter, "all">;
   label: string;
   title: string;
@@ -30,6 +30,49 @@ type ModerationItem = {
   author: string;
   href: string;
   createdAt: string;
+  reportId?: string;
+  reportStatus?: string;
+  targetId?: string;
+  targetTable?: ModerationTable;
+  targetType?: string;
+};
+
+type ContentReportRow = {
+  id: string;
+  reporter_id: string | null;
+  visitor_key: string | null;
+  target_type: string;
+  target_id: string;
+  target_title: string;
+  target_path: string;
+  reason: string;
+  status: string;
+  created_at: string;
+};
+
+const reportTargetLabels: Record<string, string> = {
+  image_post: "이미지",
+  board_post: "게시글",
+  comment: "댓글",
+  prompt_comment: "프롬프트 댓글",
+  prompt_request: "요청글",
+  prompt_request_answer: "요청 답변",
+};
+
+const reportTargetTables: Record<string, ModerationTable> = {
+  image_post: "image_posts",
+  board_post: "board_posts",
+  comment: "comments",
+  prompt_comment: "prompt_comments",
+  prompt_request: "prompt_requests",
+  prompt_request_answer: "prompt_request_answers",
+};
+
+const reportStatusLabels: Record<string, string> = {
+  open: "대기",
+  reviewed: "확인",
+  dismissed: "기각",
+  actioned: "처리됨",
 };
 
 function getProfileNickname(profile: ProfileRelation | undefined) {
@@ -76,6 +119,7 @@ export default function AdminPage() {
       promptCommentResult,
       requestResult,
       answerResult,
+      reportResult,
     ] = await Promise.all([
       supabase
         .from("image_posts")
@@ -117,6 +161,13 @@ export default function AdminPage() {
         .eq("is_hidden", false)
         .order("created_at", { ascending: false })
         .limit(30),
+      supabase
+        .from("content_reports")
+        .select(
+          "id, reporter_id, visitor_key, target_type, target_id, target_title, target_path, reason, status, created_at",
+        )
+        .order("created_at", { ascending: false })
+        .limit(50),
     ]);
 
     const nextItems: ModerationItem[] = [];
@@ -219,6 +270,29 @@ export default function AdminPage() {
       });
     }
 
+    if (!reportResult.error) {
+      ((reportResult.data ?? []) as ContentReportRow[]).forEach((report) => {
+        const targetLabel = reportTargetLabels[report.target_type] || "대상";
+        const statusLabel = reportStatusLabels[report.status] || report.status;
+
+        nextItems.push({
+          id: report.id,
+          type: "report",
+          label: "신고",
+          title: `${targetLabel} 신고 - ${report.target_title || report.target_id}`,
+          body: `[${statusLabel}] ${report.reason}`,
+          author: report.reporter_id ? "회원" : "비회원",
+          href: report.target_path || "/admin",
+          createdAt: report.created_at,
+          reportId: report.id,
+          reportStatus: report.status,
+          targetId: report.target_id,
+          targetTable: reportTargetTables[report.target_type],
+          targetType: report.target_type,
+        });
+      });
+    }
+
     const errors = [
       imageResult.error,
       boardResult.error,
@@ -226,10 +300,11 @@ export default function AdminPage() {
       promptCommentResult.error,
       requestResult.error,
       answerResult.error,
+      reportResult.error,
     ].filter(Boolean);
 
     if (errors.length > 0) {
-      setMessage("일부 항목을 불러오지 못했습니다. 009 SQL 실행 여부를 확인하세요.");
+      setMessage("일부 항목을 불러오지 못했습니다. 009 또는 010 SQL 실행 여부를 확인하세요.");
     }
 
     setItems(
@@ -309,7 +384,7 @@ export default function AdminPage() {
 
     return items.filter((item) => {
       const matchesFilter = filter === "all" || item.type === filter;
-      const matchesQuery = [item.label, item.title, item.body, item.author]
+      const matchesQuery = [item.label, item.title, item.body, item.author, item.reportStatus, item.targetType]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery);
@@ -321,24 +396,86 @@ export default function AdminPage() {
   const hideItem = async (item: ModerationItem) => {
     if (!supabase) return;
 
-    setBusyId(item.id);
+    const table = item.table ?? item.targetTable;
+    const targetId = item.table ? item.id : item.targetId;
+
+    if (!table || !targetId) {
+      setMessage("숨김 처리할 대상을 찾을 수 없습니다.");
+      return;
+    }
+
+    const busyKey = item.reportId || item.id;
+
+    setBusyId(busyKey);
     setMessage("");
 
-    const { error } = await supabase.from(item.table).update({ is_hidden: true }).eq("id", item.id);
+    const { error } = await supabase.from(table).update({ is_hidden: true }).eq("id", targetId);
 
-    setBusyId("");
+    if (!error && item.reportId) {
+      await supabase
+        .from("content_reports")
+        .update({ status: "actioned", updated_at: new Date().toISOString() })
+        .eq("id", item.reportId);
+    }
 
     if (error) {
+      setBusyId("");
       setMessage(error.message.includes("policy") ? "관리자 권한 또는 009 SQL 실행이 필요합니다." : error.message);
       return;
     }
 
-    setItems((current) => current.filter((entry) => entry.id !== item.id));
-    setMessage("숨김 처리했습니다.");
+    setBusyId("");
+    setItems((current) =>
+      current.filter((entry) => {
+        if (item.reportId && entry.id === item.reportId) return false;
+
+        const entryTable = entry.table ?? entry.targetTable;
+        const entryTargetId = entry.table ? entry.id : entry.targetId;
+
+        return !(entryTable === table && entryTargetId === targetId);
+      }),
+    );
+    setMessage(item.reportId ? "신고 대상을 숨김 처리했습니다." : "숨김 처리했습니다.");
+  };
+
+  const updateReportStatus = async (
+    item: ModerationItem,
+    nextStatus: "reviewed" | "dismissed" | "actioned",
+  ) => {
+    if (!supabase || !item.reportId) return;
+
+    setBusyId(item.reportId);
+    setMessage("");
+
+    const { error } = await supabase
+      .from("content_reports")
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
+      .eq("id", item.reportId);
+
+    setBusyId("");
+
+    if (error) {
+      setMessage(error.message.includes("policy") ? "관리자 권한 또는 010 SQL 실행이 필요합니다." : error.message);
+      return;
+    }
+
+    setItems((current) =>
+      current.map((entry) =>
+        entry.reportId === item.reportId
+          ? {
+              ...entry,
+              body: `[${reportStatusLabels[nextStatus]}] ${entry.body.replace(/^\[[^\]]+\]\s*/, "")}`,
+              reportStatus: nextStatus,
+            }
+          : entry,
+      ),
+    );
+    setMessage(`신고를 ${reportStatusLabels[nextStatus]} 상태로 바꿨습니다.`);
   };
 
   const tabs: Array<{ label: string; value: AdminFilter }> = [
     { label: "전체", value: "all" },
+    { label: "신고", value: "report" },
     { label: "이미지", value: "image" },
     { label: "게시글", value: "board" },
     { label: "댓글", value: "comment" },
@@ -369,7 +506,7 @@ export default function AdminPage() {
       <section className="dc-headline admin-headline">
         <div>
           <h1>관리자 페이지</h1>
-          <p>문제 있는 글, 댓글, 이미지, 요청글을 숨김 처리합니다.</p>
+          <p>신고된 항목을 확인하고 문제 있는 글, 댓글, 이미지, 요청글을 숨김 처리합니다.</p>
         </div>
         <button className="primary-button dc-write-button" type="button" onClick={loadItems}>
           <RefreshCw size={15} aria-hidden="true" />
@@ -425,7 +562,7 @@ export default function AdminPage() {
             <div className="admin-list-head">
               <span>종류</span>
               <span>내용</span>
-              <span>작성자</span>
+              <span>작성자/신고자</span>
               <span>날짜</span>
               <span>처리</span>
             </div>
@@ -436,7 +573,7 @@ export default function AdminPage() {
                 <p className="dc-empty-message">표시할 항목이 없습니다.</p>
               )}
               {filteredItems.map((item) => (
-                <article key={`${item.table}-${item.id}`} className="admin-row">
+                <article key={`${item.type}-${item.id}`} className="admin-row">
                   <span className="board-label">{item.label}</span>
                   <div className="admin-row-body">
                     <Link href={item.href}>{item.title}</Link>
@@ -444,14 +581,45 @@ export default function AdminPage() {
                   </div>
                   <small>@{item.author}</small>
                   <small>{formatDate(item.createdAt)}</small>
-                  <button
-                    type="button"
-                    onClick={() => hideItem(item)}
-                    disabled={busyId === item.id}
-                  >
-                    <EyeOff size={13} aria-hidden="true" />
-                    숨김
-                  </button>
+                  <div className="admin-row-actions">
+                    {item.reportId ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => hideItem(item)}
+                          disabled={busyId === item.reportId}
+                        >
+                          <EyeOff size={13} aria-hidden="true" />
+                          숨김
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateReportStatus(item, "reviewed")}
+                          disabled={busyId === item.reportId}
+                        >
+                          <CheckCircle2 size={13} aria-hidden="true" />
+                          확인
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateReportStatus(item, "dismissed")}
+                          disabled={busyId === item.reportId}
+                        >
+                          <XCircle size={13} aria-hidden="true" />
+                          기각
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => hideItem(item)}
+                        disabled={busyId === item.id}
+                      >
+                        <EyeOff size={13} aria-hidden="true" />
+                        숨김
+                      </button>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>
