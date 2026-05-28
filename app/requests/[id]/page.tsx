@@ -8,6 +8,7 @@ import { ArrowLeft, CheckCircle2, Copy, MessageCircle, Send, UserRound } from "l
 import { AuthControls } from "@/app/components/AuthControls";
 import { ReportButton } from "@/app/components/ReportButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getPromptLabVisitorKey } from "@/lib/visitor-key";
 
 type PromptRequestRow = {
   id: string;
@@ -210,9 +211,16 @@ export default function PromptRequestDetailPage() {
           p_model: "GPT Image 2.0",
           p_settings: "",
           p_explanation: "",
+          p_visitor_key: getPromptLabVisitorKey(),
         });
 
-        if (error) throw new Error(error.message);
+        if (error) {
+          throw new Error(
+            error.message.includes("p_visitor_key")
+              ? "스팸 방지 기능을 사용하려면 014 SQL 실행이 필요합니다."
+              : error.message,
+          );
+        }
       }
 
       setAnswerForm({

@@ -274,10 +274,15 @@ export default function BoardPostPage() {
         p_body: commentForm.body.trim(),
         p_guest_nickname: commentForm.guestNickname.trim(),
         p_password: commentForm.password,
+        p_visitor_key: visitorKey || getPromptLabVisitorKey(),
       });
 
       if (error) {
-        setMessage(error.message);
+        setMessage(
+          error.message.includes("p_visitor_key")
+            ? "스팸 방지 기능을 사용하려면 014 SQL 실행이 필요합니다."
+            : error.message,
+        );
         return;
       }
     }

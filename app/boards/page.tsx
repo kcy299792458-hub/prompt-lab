@@ -15,6 +15,7 @@ import {
   createSupabaseBrowserClient,
   isSupabaseConfigured,
 } from "@/lib/supabase/client";
+import { getPromptLabVisitorKey } from "@/lib/visitor-key";
 
 const boardCategories = ["전체", "공지", "자유", "질문", "팁/연구"] as const;
 type ActiveCategory = (typeof boardCategories)[number];
@@ -370,12 +371,14 @@ export default function BoardsPage() {
           p_guest_nickname: string;
           p_password: string;
           p_image_urls?: string[];
+          p_visitor_key: string;
         } = {
           p_category: form.category,
           p_title: form.title.trim(),
           p_body: form.body.trim(),
           p_guest_nickname: form.guestNickname.trim(),
           p_password: form.password,
+          p_visitor_key: getPromptLabVisitorKey(),
         };
 
         if (imageUrls.length > 0) {
@@ -388,6 +391,8 @@ export default function BoardsPage() {
           setMessage(
             imageUrls.length > 0 && error.message.includes("p_image_urls")
               ? "사진 첨부 기능을 사용하려면 005 SQL 실행이 필요합니다."
+              : error.message.includes("p_visitor_key")
+                ? "스팸 방지 기능을 사용하려면 014 SQL 실행이 필요합니다."
               : error.message,
           );
           return;

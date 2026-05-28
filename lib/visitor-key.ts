@@ -4,7 +4,7 @@ export function getPromptLabVisitorKey() {
   if (typeof window === "undefined") return "";
 
   const existing = window.localStorage.getItem(visitorStorageKey);
-  if (existing) return existing;
+  if (existing && existing.length >= 8 && existing.length <= 80) return existing;
 
   const nextKey =
     typeof crypto !== "undefined" && "randomUUID" in crypto

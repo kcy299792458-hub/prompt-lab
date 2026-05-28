@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ImagePlus, Send, X } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getPromptLabVisitorKey } from "@/lib/visitor-key";
 
 const requestTypes = ["실사", "애니", "제품사진", "캐릭터", "리터칭", "배경", "기타"];
 const maxImageCount = 4;
@@ -198,10 +199,15 @@ export default function NewPromptRequestPage() {
         p_target_model: form.targetModel,
         p_request_type: form.requestType,
         p_reference_image_urls: referenceImageUrls,
+        p_visitor_key: getPromptLabVisitorKey(),
       });
 
       if (error || !data) {
-        throw new Error(error?.message || "요청 글을 등록할 수 없습니다.");
+        throw new Error(
+          error?.message.includes("p_visitor_key")
+            ? "스팸 방지 기능을 사용하려면 014 SQL 실행이 필요합니다."
+            : error?.message || "요청 글을 등록할 수 없습니다.",
+        );
       }
 
       router.push(`/requests/${data}`);
