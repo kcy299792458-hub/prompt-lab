@@ -22,7 +22,6 @@ import {
   modelLandingPages,
 } from "@/lib/seo";
 
-type FeedTab = "all" | "korean" | "english" | "mixed";
 type PromptCounts = Record<number, { likes: number; saves: number; comments: number }>;
 type UploadedPostCounts = Record<string, { likes: number; saves: number; comments: number }>;
 type UploadedImagePostRow = {
@@ -138,7 +137,6 @@ function uploadedToGalleryItem(
 export default function Home() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("전체");
-  const [feedTab, setFeedTab] = useState<FeedTab>("all");
   const [promptCounts, setPromptCounts] = useState<PromptCounts>({});
   const [uploadedPosts, setUploadedPosts] = useState<UploadedImagePostRow[]>([]);
   const [uploadedPostCounts, setUploadedPostCounts] = useState<UploadedPostCounts>({});
@@ -415,14 +413,6 @@ export default function Home() {
 
     const filtered = galleryItems.filter((prompt) => {
       const matchesCategory = category === "전체" || prompt.category === category;
-      const matchesTab =
-        feedTab === "all" ||
-        (feedTab === "korean" &&
-          (prompt.language === "한국어" ||
-            prompt.language === "한영 혼합")) ||
-        (feedTab === "english" &&
-          prompt.language === "영어") ||
-        (feedTab === "mixed" && prompt.language === "한영 혼합");
       const searchableText = [
         prompt.title,
         prompt.description,
@@ -437,11 +427,11 @@ export default function Home() {
         .join(" ")
         .toLowerCase();
 
-      return matchesCategory && matchesTab && searchableText.includes(normalizedQuery);
+      return matchesCategory && searchableText.includes(normalizedQuery);
     });
 
     return [...filtered].sort((a, b) => b.sortKey - a.sortKey);
-  }, [category, feedTab, galleryItems, query]);
+  }, [category, galleryItems, query]);
   const seoTags = useMemo(() => getAllTags().slice(0, 18), []);
 
   return (
@@ -574,39 +564,9 @@ export default function Home() {
               <h2>{filteredPrompts.length}개의 이미지 글</h2>
             </div>
             <Link className="primary-button dc-upload-button" href="/upload">
-              <Upload size={15} aria-hidden="true" />
+              <Upload size={18} aria-hidden="true" />
               이미지 업로드
             </Link>
-            <div className="sort-tabs board-tabs" aria-label="게시글 정렬">
-              <button
-                type="button"
-                className={feedTab === "all" ? "active" : ""}
-                onClick={() => setFeedTab("all")}
-              >
-                전체글
-              </button>
-              <button
-                type="button"
-                className={feedTab === "korean" ? "active" : ""}
-                onClick={() => setFeedTab("korean")}
-              >
-                한국어 포함
-              </button>
-              <button
-                type="button"
-                className={feedTab === "english" ? "active" : ""}
-                onClick={() => setFeedTab("english")}
-              >
-                영어 원문
-              </button>
-              <button
-                type="button"
-                className={feedTab === "mixed" ? "active" : ""}
-                onClick={() => setFeedTab("mixed")}
-              >
-                한영 혼합
-              </button>
-            </div>
           </div>
 
           <div className="dc-list-head">

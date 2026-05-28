@@ -279,8 +279,11 @@
 }
 
 .dc-board-toolbar {
+  align-items: center;
   border-color: #c7cbd0;
   border-radius: 0;
+  display: flex;
+  justify-content: space-between;
   margin-bottom: 0;
   padding: 10px;
 }
@@ -2619,10 +2622,16 @@ body,
 }
 
 .dc-upload-button {
+  align-items: center;
   border-radius: 0;
-  font-size: 12px;
-  min-height: 32px;
-  padding: 0 10px;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 900;
+  gap: 7px;
+  justify-content: center;
+  margin-left: auto;
+  min-height: 40px;
+  padding: 0 16px;
 }
 
 .dc-upload-entry {
