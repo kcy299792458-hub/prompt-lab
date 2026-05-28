@@ -12,6 +12,13 @@ import {
 import { categories, prompts, type Prompt } from "@/data/prompts";
 import { AuthControls } from "@/app/components/AuthControls";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  categoryLandingPages,
+  getAllTags,
+  getPromptPath,
+  getTagPath,
+  modelLandingPages,
+} from "@/lib/seo";
 
 type FeedTab = "all" | "korean" | "english" | "mixed";
 type PromptCounts = Record<number, { likes: number; saves: number; comments: number }>;
@@ -74,7 +81,7 @@ function promptToGalleryItem(prompt: Prompt): GalleryItem {
     style: prompt.style,
     language: prompt.language,
     image: prompt.image,
-    href: `/prompts/${prompt.id}`,
+    href: getPromptPath(prompt),
     tags: prompt.tags,
     authorName: prompt.authorName || "운영자",
     sortKey: prompt.id,
@@ -270,7 +277,7 @@ export default function Home() {
 
         return {
           id: comment.id,
-          href: `/prompts/${comment.prompt_id}`,
+          href: getPromptPath(prompt),
           title: comment.body,
           meta: `@${comment.guest_nickname} · ${prompt.title}`,
           sortKey: new Date(comment.created_at).getTime(),
@@ -358,6 +365,7 @@ export default function Home() {
 
     return [...filtered].sort((a, b) => b.sortKey - a.sortKey);
   }, [category, feedTab, galleryItems, query]);
+  const seoTags = useMemo(() => getAllTags().slice(0, 18), []);
 
   return (
     <main className="site-shell dc-shell">
@@ -406,7 +414,7 @@ export default function Home() {
             {popularPrompts.map(({ prompt, score }, index) => (
               <li key={prompt.id}>
                 <span className="dc-rank-num">{index + 1}</span>
-                <Link href={`/prompts/${prompt.id}`}>{prompt.title}</Link>
+                <Link href={getPromptPath(prompt)}>{prompt.title}</Link>
                 <small>{score > 0 ? score : "0"}</small>
               </li>
             ))}
@@ -568,6 +576,46 @@ export default function Home() {
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="seo-link-section dc-home-seo-links" aria-label="주제별 프롬프트 탐색">
+        <div>
+          <p className="section-kicker">Explore</p>
+          <h2>주제별 AI 이미지 프롬프트</h2>
+          <p>검색에서 많이 찾는 카테고리, 모델, 태그별로 프롬프트 예시를 모았습니다.</p>
+        </div>
+        <div className="seo-link-groups">
+          <div>
+            <strong>카테고리</strong>
+            <div className="seo-chip-row">
+              {categoryLandingPages.map((page) => (
+                <Link key={page.slug} href={`/categories/${page.slug}`}>
+                  {page.category}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div>
+            <strong>모델</strong>
+            <div className="seo-chip-row">
+              {modelLandingPages.map((page) => (
+                <Link key={page.slug} href={`/models/${page.slug}`}>
+                  {page.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div>
+            <strong>태그</strong>
+            <div className="seo-chip-row">
+              {seoTags.map((tag) => (
+                <Link key={tag} href={getTagPath(tag)}>
+                  #{tag}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>

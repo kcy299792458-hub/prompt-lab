@@ -6,6 +6,7 @@ import { ArrowLeft, Bookmark, MessageCircle } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import { prompts, type Prompt } from "@/data/prompts";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getPromptPath } from "@/lib/seo";
 import { getPromptLabVisitorKey } from "@/lib/visitor-key";
 
 type SavedReactionRow = {
@@ -106,7 +107,7 @@ export default function SavedPromptsPage() {
         {savedPrompts.length > 0 && (
           <div className="gallery-grid dc-gallery-grid">
             {savedPrompts.map((prompt) => (
-              <Link key={prompt.id} className="image-card dc-image-card" href={`/prompts/${prompt.id}`}>
+              <Link key={prompt.id} className="image-card dc-image-card" href={getPromptPath(prompt)}>
                 <img src={prompt.image} alt={`${prompt.title} 결과 이미지`} />
                 <div className="image-card-body">
                   <div className="card-meta">

@@ -15,9 +15,16 @@ import {
 import { AuthControls } from "@/app/components/AuthControls";
 import { ReportButton } from "@/app/components/ReportButton";
 import { getPromptVersions } from "@/data/community";
-import { prompts } from "@/data/prompts";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getPromptLabVisitorKey } from "@/lib/visitor-key";
+import {
+  findPromptByParam,
+  getCategoryPath,
+  getModelPath,
+  getPromptPath,
+  getPromptSeoTips,
+  getTagPath,
+} from "@/lib/seo";
 
 type PromptCommentRow = {
   id: string;
@@ -60,13 +67,14 @@ export default function PromptDetailPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   const prompt = useMemo(
-    () => prompts.find((item) => item.id === Number(params.id)),
+    () => findPromptByParam(params.id),
     [params.id],
   );
 
   const promptVersions = prompt ? getPromptVersions(prompt) : [];
   const primaryPromptVersion = promptVersions[0] ?? null;
   const authorName = prompt?.authorName || "운영자";
+  const seoTips = prompt ? getPromptSeoTips(prompt) : null;
 
   const loadInteractions = async (currentVisitorKey = visitorKey) => {
     if (!supabase || !prompt) return;
@@ -247,8 +255,8 @@ export default function PromptDetailPage() {
             </div>
             <div className="detail-article-body">
               <div className="card-meta">
-                <span>{prompt.category}</span>
-                <span>{prompt.model}</span>
+                <Link href={getCategoryPath(prompt.category)}>{prompt.category}</Link>
+                <Link href={getModelPath(prompt.model)}>{prompt.model}</Link>
                 <span>{prompt.aspectRatio}</span>
               </div>
               <h1>{prompt.title}</h1>
@@ -286,7 +294,7 @@ export default function PromptDetailPage() {
                   targetType="example_prompt"
                   targetId={String(prompt.id)}
                   targetTitle={prompt.title}
-                  targetPath={`/prompts/${prompt.id}`}
+                  targetPath={getPromptPath(prompt)}
                   compact
                 />
               </div>
@@ -324,6 +332,46 @@ export default function PromptDetailPage() {
               )}
             </div>
           </section>
+
+          {seoTips && (
+            <section className="prompt-detail-section">
+              <div className="section-heading">
+                <h2>프롬프트 사용 노트</h2>
+                <span>검색/응용 팁</span>
+              </div>
+              <div className="prompt-guide-grid">
+                <article className="prompt-guide-card">
+                  <strong>핵심 구조</strong>
+                  <p>{seoTips.core}</p>
+                </article>
+                <article className="prompt-guide-card">
+                  <strong>모델 사용 팁</strong>
+                  <p>{seoTips.model}</p>
+                </article>
+                <article className="prompt-guide-card">
+                  <strong>변형 방법</strong>
+                  <p>{seoTips.variation}</p>
+                </article>
+                <article className="prompt-guide-card">
+                  <strong>실패 줄이기</strong>
+                  <p>{seoTips.failure}</p>
+                </article>
+              </div>
+              <div className="prompt-guide-links">
+                <Link className="prompt-guide-link" href={getCategoryPath(prompt.category)}>
+                  {prompt.category} 프롬프트 더 보기
+                </Link>
+                <Link className="prompt-guide-link" href={getModelPath(prompt.model)}>
+                  {prompt.model} 예시 더 보기
+                </Link>
+                {prompt.tags.slice(0, 4).map((tag) => (
+                  <Link className="prompt-guide-link" href={getTagPath(tag)} key={tag}>
+                    #{tag}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="prompt-detail-section dc-comment-section">
             <div className="section-heading">
@@ -375,7 +423,7 @@ export default function PromptDetailPage() {
                         targetType="prompt_comment"
                         targetId={comment.id}
                         targetTitle={`프롬프트 댓글 - ${prompt.title}`}
-                        targetPath={`/prompts/${prompt.id}`}
+                        targetPath={getPromptPath(prompt)}
                         compact
                       />
                     </div>
@@ -393,7 +441,11 @@ export default function PromptDetailPage() {
         <aside className="detail-side">
           <div className="spec-grid">
             <span>모델</span>
-            <strong>{prompt.model}</strong>
+            <strong>
+              <Link className="creator-inline-link" href={getModelPath(prompt.model)}>
+                {prompt.model}
+              </Link>
+            </strong>
             <span>작성자</span>
             <strong>@{authorName}</strong>
             <span>비율</span>
@@ -405,7 +457,9 @@ export default function PromptDetailPage() {
           </div>
           <div className="tag-row">
             {prompt.tags.map((tag) => (
-              <span key={tag}>#{tag}</span>
+              <Link key={tag} href={getTagPath(tag)}>
+                #{tag}
+              </Link>
             ))}
           </div>
         </aside>

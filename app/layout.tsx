@@ -1,28 +1,35 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
-const siteUrl = "https://prompt-lab-drab-xi.vercel.app";
+import { SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "프롬프트랩 - AI 이미지 갤러리",
+    default: "프롬프트랩 - GPT Image AI 이미지 프롬프트 갤러리",
     template: "%s | 프롬프트랩",
   },
   description:
-    "GPT Image 2.0 기준 AI 이미지 예시와 실제 프롬프트 원문을 함께 확인하는 이미지 프롬프트 갤러리.",
+    "GPT Image, Midjourney, Stable Diffusion용 AI 이미지 프롬프트 예시와 실제 결과 이미지를 함께 확인하는 프롬프트 갤러리.",
   keywords: [
     "이미지 프롬프트",
     "AI 이미지",
     "프롬프트 공유",
     "프롬프트랩",
-    "GPT Image 2.0",
-    "AI 커뮤니티",
+    "GPT Image 프롬프트",
+    "Midjourney 프롬프트",
+    "Stable Diffusion 프롬프트",
   ],
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     title: "프롬프트랩",
-    description: "이미지와 실제 프롬프트를 한 번에 확인",
-    url: siteUrl,
+    description: "AI 이미지 결과와 실제 프롬프트를 한 번에 확인",
+    url: SITE_URL,
     siteName: "프롬프트랩",
     locale: "ko_KR",
     type: "website",
@@ -38,7 +45,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "프롬프트랩",
-    description: "GPT Image 2.0 기준 AI 이미지 예시와 실제 프롬프트 원문을 함께 확인하는 갤러리.",
+    description: "GPT Image, Midjourney, Stable Diffusion용 AI 이미지 프롬프트 예시와 결과 이미지를 함께 확인하는 갤러리.",
     images: ["/og-image-v2.png"],
   },
 };

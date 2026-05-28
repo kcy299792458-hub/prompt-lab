@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import RequestListClient from "./RequestListClient";
 
 export const metadata: Metadata = {
-  title: "프롬프트 요청 게시판",
+  title: "프롬프트 게시판",
   alternates: {
-    canonical: "/requests",
+    canonical: "/boards",
   },
   robots: {
     index: false,
@@ -16,6 +15,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RequestsPage() {
-  return <RequestListClient />;
+export default function BoardsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return children;
 }

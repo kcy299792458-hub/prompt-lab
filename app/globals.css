@@ -357,7 +357,8 @@
   gap: 4px;
 }
 
-.dc-image-card .card-meta span {
+.dc-image-card .card-meta span,
+.dc-image-card .card-meta a {
   background: #eef0f2;
   border-radius: 0;
   color: #555;
@@ -1660,7 +1661,8 @@ img {
   justify-content: space-between;
 }
 
-.card-meta span {
+.card-meta span,
+.card-meta a {
   background: rgba(22, 20, 18, 0.08);
   border-radius: 6px;
   color: #5d554d;
@@ -2807,6 +2809,169 @@ body,
 
   .creator-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.seo-landing-page {
+  display: grid;
+  gap: 22px;
+  margin: 28px auto 0;
+  max-width: 1280px;
+}
+
+.seo-headline {
+  align-items: stretch;
+}
+
+.seo-count-box {
+  background: #ffffff;
+  border: 1px solid #c7cbd0;
+  display: grid;
+  min-width: 150px;
+  padding: 18px;
+  place-items: center;
+  text-align: center;
+}
+
+.seo-count-box strong {
+  color: #111;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.seo-count-box span {
+  color: #666;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.seo-intro-section,
+.seo-link-section {
+  background: #ffffff;
+  border: 1px solid #c7cbd0;
+  padding: 18px;
+}
+
+.seo-intro-section p,
+.seo-link-section p {
+  color: #555;
+  line-height: 1.75;
+  margin: 0;
+}
+
+.seo-link-section {
+  display: grid;
+  gap: 18px;
+}
+
+.dc-home-seo-links {
+  margin: 28px auto 0;
+  max-width: 1280px;
+}
+
+.seo-link-section h2 {
+  color: #111;
+  font-size: 22px;
+  margin: 3px 0 8px;
+}
+
+.seo-link-groups {
+  display: grid;
+  gap: 16px;
+}
+
+.seo-link-groups strong {
+  color: #111;
+  display: block;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.seo-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.seo-chip-row a,
+.card-meta a,
+.tag-row a,
+.prompt-guide-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.card-meta a {
+  color: inherit;
+}
+
+.seo-chip-row a {
+  background: #f7f7f7;
+  border: 1px solid #d6d9d0;
+  color: #333;
+  font-size: 12px;
+  padding: 8px 11px;
+}
+
+.seo-chip-row a:hover,
+.tag-row a:hover,
+.prompt-guide-link:hover {
+  border-color: #111;
+  color: #111;
+}
+
+.seo-prompt-grid {
+  margin-top: 0;
+}
+
+.prompt-guide-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.prompt-guide-card {
+  background: #f7f7f7;
+  border: 1px solid #dfe2e5;
+  padding: 14px;
+}
+
+.prompt-guide-card strong {
+  color: #111;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.prompt-guide-card p {
+  color: #555;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.prompt-guide-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.prompt-guide-link {
+  border: 1px solid #d6d9d0;
+  color: #555;
+  font-size: 12px;
+  padding: 8px 11px;
+}
+
+.tag-row a {
+  border: 1px solid #d6d9d0;
+  color: #555;
+  font-size: 12px;
+  padding: 7px 10px;
+}
+
+@media (max-width: 760px) {
+  .prompt-guide-grid {
+    grid-template-columns: 1fr;
   }
 }
 

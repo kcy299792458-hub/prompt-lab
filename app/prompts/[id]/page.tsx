@@ -2,8 +2,18 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PromptDetailClient from "./PromptDetailClient";
 import { prompts } from "@/data/prompts";
-
-const siteUrl = "https://prompt-lab-drab-xi.vercel.app";
+import {
+  absoluteUrl,
+  findPromptByParam,
+  getBreadcrumbJsonLd,
+  getCategoryPath,
+  getPromptPath,
+  getPromptJsonLd,
+  getPromptKeywords,
+  getPromptSeoDescription,
+  getPromptSeoTitle,
+} from "@/lib/seo";
+import { SeoJsonLd } from "@/app/components/SeoLanding";
 
 type PromptPageProps = {
   params: Promise<{
@@ -13,7 +23,7 @@ type PromptPageProps = {
 
 export function generateStaticParams() {
   return prompts.map((prompt) => ({
-    id: String(prompt.id),
+    id: getPromptPath(prompt).split("/").pop() || String(prompt.id),
   }));
 }
 
@@ -21,7 +31,7 @@ export async function generateMetadata({
   params,
 }: PromptPageProps): Promise<Metadata> {
   const { id } = await params;
-  const prompt = prompts.find((item) => item.id === Number(id));
+  const prompt = findPromptByParam(id);
 
   if (!prompt) {
     return {
@@ -29,15 +39,21 @@ export async function generateMetadata({
     };
   }
 
-  const imageUrl = new URL(prompt.image, siteUrl).toString();
-  const pageUrl = `${siteUrl}/prompts/${prompt.id}`;
+  const imageUrl = absoluteUrl(prompt.image);
+  const pageUrl = absoluteUrl(getPromptPath(prompt));
+  const title = getPromptSeoTitle(prompt);
+  const description = getPromptSeoDescription(prompt);
 
   return {
-    title: `${prompt.title} - 프롬프트랩`,
-    description: prompt.description,
+    title,
+    description,
+    keywords: getPromptKeywords(prompt),
+    alternates: {
+      canonical: getPromptPath(prompt),
+    },
     openGraph: {
-      title: prompt.title,
-      description: prompt.description,
+      title,
+      description,
       url: pageUrl,
       siteName: "프롬프트랩",
       locale: "ko_KR",
@@ -51,8 +67,8 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: prompt.title,
-      description: prompt.description,
+      title,
+      description,
       images: [imageUrl],
     },
   };
@@ -60,10 +76,23 @@ export async function generateMetadata({
 
 export default async function PromptDetailPage({ params }: PromptPageProps) {
   const { id } = await params;
+  const prompt = findPromptByParam(id);
 
-  if (!prompts.some((item) => item.id === Number(id))) {
+  if (!prompt) {
     notFound();
   }
 
-  return <PromptDetailClient />;
+  return (
+    <>
+      <SeoJsonLd data={getPromptJsonLd(prompt)} />
+      <SeoJsonLd
+        data={getBreadcrumbJsonLd([
+          { name: "프롬프트랩", path: "/" },
+          { name: prompt.category, path: getCategoryPath(prompt.category) },
+          { name: prompt.title, path: getPromptPath(prompt) },
+        ])}
+      />
+      <PromptDetailClient />
+    </>
+  );
 }

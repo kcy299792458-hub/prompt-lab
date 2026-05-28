@@ -1,13 +1,15 @@
 import type { MetadataRoute } from "next";
-
-const siteUrl = "https://prompt-lab-drab-xi.vercel.app";
+import { SITE_URL } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-    },
-    sitemap: `${siteUrl}/sitemap.xml`,
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/admin", "/auth"],
+      },
+    ],
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
