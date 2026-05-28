@@ -2,7 +2,40 @@ create table if not exists public.content_reports (
   id uuid primary key default gen_random_uuid(),
   reporter_id uuid references public.profiles(id) on delete set null,
   visitor_key text check (visitor_key is null or char_length(visitor_key) between 8 and 80),
-  target_type text not null check (
+  target_type text not null,
+  target_id text not null check (char_length(target_id) between 1 and 80),
+  target_title text not null default '' check (char_length(target_title) <= 200),
+  target_path text not null default '' check (char_length(target_path) <= 300),
+  reason text not null check (char_length(reason) between 2 and 1000),
+  status text not null default 'open' check (status in ('open', 'reviewed', 'dismissed', 'actioned')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+do $$
+declare
+  existing_constraint text;
+begin
+  select constraint_name
+  into existing_constraint
+  from information_schema.check_constraints
+  where constraint_schema = 'public'
+  and constraint_name in (
+    select conname
+    from pg_constraint
+    where conrelid = 'public.content_reports'::regclass
+    and contype = 'c'
+  )
+  and check_clause like '%target_type%'
+  limit 1;
+
+  if existing_constraint is not null then
+    execute format('alter table public.content_reports drop constraint %I', existing_constraint);
+  end if;
+
+  alter table public.content_reports
+  add constraint content_reports_target_type_check
+  check (
     target_type in (
       'example_prompt',
       'image_post',
@@ -12,15 +45,9 @@ create table if not exists public.content_reports (
       'prompt_request',
       'prompt_request_answer'
     )
-  ),
-  target_id text not null check (char_length(target_id) between 1 and 80),
-  target_title text not null default '' check (char_length(target_title) <= 200),
-  target_path text not null default '' check (char_length(target_path) <= 300),
-  reason text not null check (char_length(reason) between 2 and 1000),
-  status text not null default 'open' check (status in ('open', 'reviewed', 'dismissed', 'actioned')),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+  );
+end;
+$$;
 
 create index if not exists content_reports_status_idx
 on public.content_reports(status, created_at desc);
@@ -64,8 +91,8 @@ declare
   clean_key text := nullif(left(trim(coalesce(p_visitor_key, '')), 80), '');
 begin
   if clean_type not in (
-    'image_post',
     'example_prompt',
+    'image_post',
     'board_post',
     'comment',
     'prompt_comment',

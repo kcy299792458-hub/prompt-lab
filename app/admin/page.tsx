@@ -51,6 +51,7 @@ type ContentReportRow = {
 };
 
 const reportTargetLabels: Record<string, string> = {
+  example_prompt: "예시 프롬프트",
   image_post: "이미지",
   board_post: "게시글",
   comment: "댓글",
@@ -584,14 +585,16 @@ export default function AdminPage() {
                   <div className="admin-row-actions">
                     {item.reportId ? (
                       <>
-                        <button
-                          type="button"
-                          onClick={() => hideItem(item)}
-                          disabled={busyId === item.reportId}
-                        >
-                          <EyeOff size={13} aria-hidden="true" />
-                          숨김
-                        </button>
+                        {item.targetTable && (
+                          <button
+                            type="button"
+                            onClick={() => hideItem(item)}
+                            disabled={busyId === item.reportId}
+                          >
+                            <EyeOff size={13} aria-hidden="true" />
+                            숨김
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => updateReportStatus(item, "reviewed")}

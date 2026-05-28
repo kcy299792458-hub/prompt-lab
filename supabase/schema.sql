@@ -1076,6 +1076,7 @@ create table if not exists public.content_reports (
   visitor_key text check (visitor_key is null or char_length(visitor_key) between 8 and 80),
   target_type text not null check (
     target_type in (
+      'example_prompt',
       'image_post',
       'board_post',
       'comment',
@@ -1136,6 +1137,7 @@ declare
 begin
   if clean_type not in (
     'image_post',
+    'example_prompt',
     'board_post',
     'comment',
     'prompt_comment',

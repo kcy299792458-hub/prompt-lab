@@ -276,44 +276,21 @@ export default function Home() {
     [promptCounts],
   );
 
-  const recentActivities = useMemo(() => {
-    const todayKey = new Intl.DateTimeFormat("ko-KR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date());
+  const recentCommentItems = useMemo(
+    () =>
+      recentPromptComments.map((comment) => {
+        const prompt = prompts.find((item) => item.id === Number(comment.prompt_id));
 
-    const todayPosts = uploadedPosts
-      .filter(
-        (post) =>
-          new Intl.DateTimeFormat("ko-KR", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          }).format(new Date(post.created_at)) === todayKey,
-      )
-      .map((post) => ({
-        id: post.id,
-        href: `/images/${post.id}`,
-        title: post.title,
-        meta: "오늘 올라온 글",
-        sortKey: new Date(post.created_at).getTime(),
-      }));
-
-    const comments = recentPromptComments.map((comment) => {
-      const prompt = prompts.find((item) => item.id === Number(comment.prompt_id));
-
-      return {
-        id: comment.id,
-        href: `/prompts/${comment.prompt_id}`,
-        title: prompt ? prompt.title : `프롬프트 ${comment.prompt_id}`,
-        meta: `댓글 @${comment.guest_nickname}`,
-        sortKey: new Date(comment.created_at).getTime(),
-      };
-    });
-
-    return [...todayPosts, ...comments].sort((a, b) => b.sortKey - a.sortKey).slice(0, 5);
-  }, [recentPromptComments, uploadedPosts]);
+        return {
+          id: comment.id,
+          href: `/prompts/${comment.prompt_id}`,
+          title: comment.body,
+          meta: `@${comment.guest_nickname} · ${prompt ? prompt.title : `프롬프트 ${comment.prompt_id}`}`,
+          sortKey: new Date(comment.created_at).getTime(),
+        };
+      }),
+    [recentPromptComments],
+  );
 
   const filteredPrompts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -404,12 +381,12 @@ export default function Home() {
 
         <aside className="dc-rank-box">
           <div className="dc-rank-head">
-            <strong>오늘 글 / 최근 댓글</strong>
-            <span>최근반응</span>
+            <strong>최근 댓글</strong>
+            <span>댓글반응</span>
           </div>
           <ol>
-            {recentActivities.length > 0 ? (
-              recentActivities.map((activity, index) => (
+            {recentCommentItems.length > 0 ? (
+              recentCommentItems.map((activity, index) => (
                 <li key={`${activity.id}-${index}`}>
                   <span className="dc-rank-num">{index + 1}</span>
                   <Link href={activity.href}>{activity.title}</Link>
@@ -417,7 +394,7 @@ export default function Home() {
                 </li>
               ))
             ) : (
-              <li className="dc-rank-empty">아직 최근 반응이 없습니다</li>
+              <li className="dc-rank-empty">아직 댓글이 없습니다</li>
             )}
           </ol>
         </aside>

@@ -281,6 +281,13 @@ export default function PromptDetailPage() {
                   <MessageCircle size={18} aria-hidden="true" />
                   댓글 {counts.comments}
                 </button>
+                <ReportButton
+                  targetType="example_prompt"
+                  targetId={String(prompt.id)}
+                  targetTitle={prompt.title}
+                  targetPath={`/prompts/${prompt.id}`}
+                  compact
+                />
               </div>
               {reactionMessage && <p className="dc-inline-message">{reactionMessage}</p>}
             </div>

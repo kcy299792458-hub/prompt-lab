@@ -6,6 +6,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getPromptLabVisitorKey } from "@/lib/visitor-key";
 
 type ReportTargetType =
+  | "example_prompt"
   | "image_post"
   | "board_post"
   | "comment"

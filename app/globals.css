@@ -3120,6 +3120,13 @@ body,
 .report-widget {
   align-items: center;
   display: inline-flex;
+  margin-bottom: 0;
+  position: relative;
+}
+
+.comment-list article .report-widget {
+  justify-content: flex-start;
+  margin-bottom: 0;
 }
 
 .report-widget button.report-trigger {
