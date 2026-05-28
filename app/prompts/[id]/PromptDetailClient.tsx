@@ -253,36 +253,23 @@ export default function PromptDetailPage() {
         </Link>
 
         <div className="detail-main">
-          <article className="detail-article">
-            <div className="image-viewer">
-              <img
-                className="detail-hero-image"
-                src={prompt.image}
-                alt={`${prompt.title} 결과 이미지`}
-              />
-            </div>
-            <div className="detail-article-body">
-              <div className="card-meta">
-                <Link href={getCategoryPath(prompt.category)}>{prompt.category}</Link>
-                <Link href={getModelPath(prompt.model)}>{prompt.model}</Link>
-                <span>{prompt.aspectRatio}</span>
-              </div>
-              <h1>{prompt.title}</h1>
-              <p>{prompt.description}</p>
-              <div className="author-line dc-author-line">
+          <article className="detail-article uploaded-post-article">
+            <div className="detail-article-body uploaded-post-head">
+              <div className="uploaded-post-meta">
                 <span>
                   <UserRound size={14} aria-hidden="true" /> 작성자 @{authorName}
                 </span>
-                <span>예시 게시글</span>
-              </div>
-              <div className="detail-actions">
+                <span>사진 1장</span>
+                <Link href={getCategoryPath(prompt.category)}>{prompt.category}</Link>
+                <Link href={getModelPath(prompt.model)}>{prompt.model}</Link>
+                <span>{prompt.aspectRatio}</span>
                 <button
                   className={`icon-action wide${activeReactions.like ? " active" : ""}`}
                   type="button"
                   onClick={() => toggleReaction("like")}
                   aria-pressed={activeReactions.like}
                 >
-                  <Heart size={18} aria-hidden="true" />
+                  <Heart size={16} aria-hidden="true" />
                   좋아요 {counts.likes}
                 </button>
                 <button
@@ -291,11 +278,11 @@ export default function PromptDetailPage() {
                   onClick={() => toggleReaction("save")}
                   aria-pressed={activeReactions.save}
                 >
-                  <Bookmark size={18} aria-hidden="true" />
+                  <Bookmark size={16} aria-hidden="true" />
                   저장 {counts.saves}
                 </button>
                 <button className="icon-action wide" type="button">
-                  <MessageCircle size={18} aria-hidden="true" />
+                  <MessageCircle size={16} aria-hidden="true" />
                   댓글 {counts.comments}
                 </button>
                 <ReportButton
@@ -306,7 +293,15 @@ export default function PromptDetailPage() {
                   compact
                 />
               </div>
+              <h1>{prompt.title}</h1>
               {reactionMessage && <p className="dc-inline-message">{reactionMessage}</p>}
+            </div>
+            <div className="image-viewer">
+              <img
+                className="detail-hero-image"
+                src={prompt.image}
+                alt={`${prompt.title} 결과 이미지`}
+              />
             </div>
           </article>
 
@@ -339,6 +334,14 @@ export default function PromptDetailPage() {
                 </section>
               )}
             </div>
+          </section>
+
+          <section className="prompt-detail-section uploaded-description-section">
+            <div className="section-heading">
+              <h2>설명글</h2>
+              <span>게시글 소개</span>
+            </div>
+            <p>{prompt.description}</p>
           </section>
 
           {seoTips && (

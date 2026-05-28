@@ -232,7 +232,35 @@ export default function UploadedImageDetailPage() {
         {post && (
           <>
             <div className="detail-main">
-              <article className="detail-article">
+              <article className="detail-article uploaded-post-article">
+                <div className="detail-article-body uploaded-post-head">
+                  <div className="uploaded-post-meta">
+                    <span>
+                      <UserRound size={14} aria-hidden="true" /> 작성자{" "}
+                      <Link className="creator-inline-link" href={`/creators/${post.author_id}`}>
+                        @{authorName}
+                      </Link>
+                    </span>
+                    <span>사진 {images.length}장</span>
+                    <span>
+                      <Eye size={14} aria-hidden="true" /> 조회 {metrics.viewCount}
+                    </span>
+                    <span>
+                      <Copy size={14} aria-hidden="true" /> 복사 {metrics.copyCount}
+                    </span>
+                    <span>{post.model}</span>
+                    <span>{post.aspect_ratio}</span>
+                    <span>{post.category}</span>
+                    <ReportButton
+                      targetType="image_post"
+                      targetId={post.id}
+                      targetTitle={post.title}
+                      targetPath={`/images/${post.id}`}
+                      compact
+                    />
+                  </div>
+                  <h1>{post.title}</h1>
+                </div>
                 <div className="image-viewer uploaded-image-viewer">
                   {images.map((imageUrl, index) => (
                     <img
@@ -242,39 +270,6 @@ export default function UploadedImageDetailPage() {
                       alt={`${post.title} 이미지 ${index + 1}`}
                     />
                   ))}
-                </div>
-                <div className="detail-article-body">
-                  <div className="card-meta">
-                    <span>{post.category}</span>
-                    <span>{post.model}</span>
-                    <span>{post.aspect_ratio}</span>
-                  </div>
-                  <h1>{post.title}</h1>
-                  <p>{post.description || "설명이 없습니다."}</p>
-                  <div className="author-line dc-author-line">
-                    <span>
-                      <UserRound size={14} aria-hidden="true" /> 작성자{" "}
-                      <Link className="creator-inline-link" href={`/creators/${post.author_id}`}>
-                        @{authorName}
-                      </Link>
-                    </span>
-                    <span>{images.length}장</span>
-                    <span>
-                      <Eye size={14} aria-hidden="true" /> 조회 {metrics.viewCount}
-                    </span>
-                    <span>
-                      <Copy size={14} aria-hidden="true" /> 복사 {metrics.copyCount}
-                    </span>
-                  </div>
-                  <div className="detail-actions">
-                    <ReportButton
-                      targetType="image_post"
-                      targetId={post.id}
-                      targetTitle={post.title}
-                      targetPath={`/images/${post.id}`}
-                      compact
-                    />
-                  </div>
                 </div>
               </article>
 
@@ -309,6 +304,14 @@ export default function UploadedImageDetailPage() {
                     <p className="dc-empty-message">등록된 프롬프트 원문이 없습니다.</p>
                   )}
                 </div>
+              </section>
+
+              <section className="prompt-detail-section uploaded-description-section">
+                <div className="section-heading">
+                  <h2>설명글</h2>
+                  <span>작성자 메모</span>
+                </div>
+                <p>{post.description || "설명이 없습니다."}</p>
               </section>
             </div>
 
