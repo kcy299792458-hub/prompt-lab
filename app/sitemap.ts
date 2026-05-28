@@ -16,6 +16,14 @@ import {
   getPostImages,
 } from "@/lib/seo-dynamic";
 
+function sitemapUrl(pathOrUrl: string) {
+  return encodeURI(pathOrUrl.startsWith("http") ? pathOrUrl : absoluteUrl(pathOrUrl));
+}
+
+function sitemapImageUrl(pathOrUrl: string) {
+  return sitemapUrl(pathOrUrl).replace(/&/g, "&amp;");
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const tags = getAllTags();
@@ -27,51 +35,51 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     {
-      url: SITE_URL,
+      url: sitemapUrl(SITE_URL),
       lastModified: now,
       changeFrequency: "daily" as const,
       priority: 1,
     },
     ...categoryLandingPages.map((page) => ({
-      url: `${SITE_URL}/categories/${page.slug}`,
+      url: sitemapUrl(`${SITE_URL}/categories/${page.slug}`),
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.85,
     })),
     ...modelLandingPages.map((page) => ({
-      url: `${SITE_URL}/models/${page.slug}`,
+      url: sitemapUrl(`${SITE_URL}/models/${page.slug}`),
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.8,
     })),
     ...tags.map((tag) => ({
-      url: `${SITE_URL}${getTagPath(tag)}`,
+      url: sitemapUrl(`${SITE_URL}${getTagPath(tag)}`),
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.65,
     })),
     ...prompts.map((prompt) => ({
-      url: `${SITE_URL}${getPromptPath(prompt)}`,
+      url: sitemapUrl(`${SITE_URL}${getPromptPath(prompt)}`),
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.75,
-      images: [absoluteUrl(prompt.image)],
+      images: [sitemapImageUrl(prompt.image)],
     })),
     ...uploadedPosts.map((post) => ({
-      url: `${SITE_URL}/images/${post.id}`,
+      url: sitemapUrl(`${SITE_URL}/images/${post.id}`),
       lastModified: new Date(post.updated_at || post.created_at),
       changeFrequency: "weekly" as const,
       priority: 0.72,
-      images: getPostImages(post).map(absoluteUrl),
+      images: getPostImages(post).map(sitemapImageUrl),
     })),
     ...creators.map((creator) => ({
-      url: `${SITE_URL}/creators/${creator.id}`,
+      url: sitemapUrl(`${SITE_URL}/creators/${creator.id}`),
       lastModified: creator.lastModified,
       changeFrequency: "weekly" as const,
       priority: 0.64,
     })),
     ...resolvedRequests.map((request) => ({
-      url: `${SITE_URL}/requests/${request.id}`,
+      url: sitemapUrl(`${SITE_URL}/requests/${request.id}`),
       lastModified: request.lastModified,
       changeFrequency: "weekly" as const,
       priority: 0.58,
