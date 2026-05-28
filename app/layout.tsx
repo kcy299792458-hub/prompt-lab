@@ -26,6 +26,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  verification: {
+    google: "7z74D7rzgvjaBFKh61hWa3SNEMTnPt_gKiDlpicDfKY",
+  },
   openGraph: {
     title: "프롬프트랩",
     description: "AI 이미지 결과와 실제 프롬프트를 한 번에 확인",
