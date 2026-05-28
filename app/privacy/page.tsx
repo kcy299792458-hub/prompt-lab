@@ -70,8 +70,8 @@ export default function PrivacyPage() {
 
         <h2>6. 문의</h2>
         <p>
-          개인정보 관련 문의와 삭제 요청을 받을 공식 연락처는 정식 운영 전에 별도 공지합니다.
-          공개 배포 전 운영자 이메일 또는 문의 채널을 반드시 추가해야 합니다.
+          개인정보 관련 문의, 게시물 삭제 요청, 계정 관련 문의는 운영자 이메일
+          promptlab.kr@gmail.com 으로 보낼 수 있습니다.
         </p>
       </section>
     </main>

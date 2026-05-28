@@ -74,6 +74,9 @@ export default function TermsPage() {
           서비스 기능, 화면, 정책은 운영 상황에 따라 변경될 수 있습니다. 중요한 변경이 있을
           경우 사이트 내 공지나 관련 화면을 통해 안내합니다.
         </p>
+
+        <h2>7. 문의</h2>
+        <p>서비스 관련 문의는 promptlab.kr@gmail.com 으로 보낼 수 있습니다.</p>
       </section>
     </main>
   );
