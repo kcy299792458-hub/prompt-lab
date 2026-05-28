@@ -2573,6 +2573,10 @@ body,
   margin: 10px 0 0;
 }
 
+.dc-home-panels {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .dc-home-panels .dc-rank-box li {
   grid-template-columns: 22px minmax(0, 1fr) 96px;
 }
@@ -2589,6 +2593,18 @@ body,
   font-size: 12px;
   min-height: 34px;
   padding: 10px;
+}
+
+@media (max-width: 1180px) {
+  .dc-home-panels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .dc-home-panels {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dc-upload-button {

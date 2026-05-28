@@ -296,6 +296,51 @@ export default function Home() {
     [recentPromptComments],
   );
 
+  const weeklyCreators = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const creatorMap = new Map<
+      string,
+      {
+        authorName: string;
+        postCount: number;
+        latestAt: number;
+        latestHref: string;
+        latestTitle: string;
+      }
+    >();
+
+    uploadedPosts.forEach((post) => {
+      const createdAt = new Date(post.created_at).getTime();
+      if (createdAt < weekAgo) return;
+
+      const authorName = getProfileNickname(post.profiles);
+      const current = creatorMap.get(post.author_id);
+
+      if (!current) {
+        creatorMap.set(post.author_id, {
+          authorName,
+          postCount: 1,
+          latestAt: createdAt,
+          latestHref: `/images/${post.id}`,
+          latestTitle: post.title,
+        });
+        return;
+      }
+
+      current.postCount += 1;
+
+      if (createdAt > current.latestAt) {
+        current.latestAt = createdAt;
+        current.latestHref = `/images/${post.id}`;
+        current.latestTitle = post.title;
+      }
+    });
+
+    return [...creatorMap.values()]
+      .sort((a, b) => b.postCount - a.postCount || b.latestAt - a.latestAt)
+      .slice(0, 8);
+  }, [uploadedPosts]);
+
   const filteredPrompts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -380,6 +425,28 @@ export default function Home() {
                 <small>{score > 0 ? score : "0"}</small>
               </li>
             ))}
+          </ol>
+        </aside>
+
+        <aside className="dc-rank-box">
+          <div className="dc-rank-head">
+            <strong>이번 주 인기 크리에이터</strong>
+            <span>업로드</span>
+          </div>
+          <ol>
+            {weeklyCreators.length > 0 ? (
+              weeklyCreators.map((creator, index) => (
+                <li key={`${creator.authorName}-${creator.latestAt}`}>
+                  <span className="dc-rank-num">{index + 1}</span>
+                  <Link href={creator.latestHref} title={creator.latestTitle}>
+                    @{creator.authorName}
+                  </Link>
+                  <small>{creator.postCount}글</small>
+                </li>
+              ))
+            ) : (
+              <li className="dc-rank-empty">이번 주 업로더가 없습니다</li>
+            )}
           </ol>
         </aside>
 
