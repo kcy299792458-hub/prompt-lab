@@ -75,6 +75,9 @@ export default function PromptDetailPage() {
   const primaryPromptVersion = promptVersions[0] ?? null;
   const authorName = prompt?.authorName || "운영자";
   const seoTips = prompt ? getPromptSeoTips(prompt) : null;
+  const promptUseNote = seoTips
+    ? [seoTips.core, seoTips.model, seoTips.variation, seoTips.failure].join(" ")
+    : "";
 
   const loadInteractions = async (currentVisitorKey = visitorKey) => {
     if (!supabase || !prompt) return;
@@ -344,24 +347,9 @@ export default function PromptDetailPage() {
                 <h2>프롬프트 사용 노트</h2>
                 <span>검색/응용 팁</span>
               </div>
-              <div className="prompt-guide-grid">
-                <article className="prompt-guide-card">
-                  <strong>핵심 구조</strong>
-                  <p>{seoTips.core}</p>
-                </article>
-                <article className="prompt-guide-card">
-                  <strong>모델 사용 팁</strong>
-                  <p>{seoTips.model}</p>
-                </article>
-                <article className="prompt-guide-card">
-                  <strong>변형 방법</strong>
-                  <p>{seoTips.variation}</p>
-                </article>
-                <article className="prompt-guide-card">
-                  <strong>실패 줄이기</strong>
-                  <p>{seoTips.failure}</p>
-                </article>
-              </div>
+              <article className="prompt-guide-note">
+                <p>{promptUseNote}</p>
+              </article>
               <div className="prompt-guide-links">
                 <Link className="prompt-guide-link" href={getCategoryPath(prompt.category)}>
                   {prompt.category} 프롬프트 더 보기

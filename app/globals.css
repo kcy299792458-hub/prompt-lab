@@ -3199,6 +3199,19 @@ body,
   margin: 0;
 }
 
+.prompt-guide-note {
+  background: #ffffff;
+  border: 1px solid #dfe2e5;
+  padding: 14px;
+}
+
+.prompt-guide-note p {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 0;
+}
+
 .prompt-guide-links {
   display: flex;
   flex-wrap: wrap;
