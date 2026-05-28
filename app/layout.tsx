@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   verification: {
-    google: "7z74D7rzgvjaBFKh61hWa3SNEMTnPt_gKiDlpicDfKY",
+    google: "zrajPQclrWvUKP3b9XhMyrfRU7kpSII53XYQU_DGMos",
   },
   openGraph: {
     title: "프롬프트랩",
