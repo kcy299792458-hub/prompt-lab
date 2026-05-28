@@ -3,8 +3,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Copy, MessageCircle, Send, UserRound } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, CheckCircle2, Copy, MessageCircle, Send, Trash2, UserRound } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import { ReportButton } from "@/app/components/ReportButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -67,6 +67,7 @@ function makeSafeNickname(session: Session) {
 
 export default function PromptRequestDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [session, setSession] = useState<Session | null>(null);
   const [request, setRequest] = useState<PromptRequestRow | null>(null);
@@ -77,6 +78,7 @@ export default function PromptRequestDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusPassword, setStatusPassword] = useState("");
+  const [answerPasswords, setAnswerPasswords] = useState<Record<string, string>>({});
   const [answerForm, setAnswerForm] = useState({
     guestNickname: "",
     password: "",
@@ -146,6 +148,7 @@ export default function PromptRequestDetailPage() {
   }, [params.id, supabase]);
 
   const isOwner = Boolean(session && request?.author_id && session.user.id === request.author_id);
+  const canManageRequest = Boolean(request && (isOwner || !request.author_id));
 
   const copyPrompt = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text);
@@ -269,6 +272,72 @@ export default function PromptRequestDetailPage() {
     }
   };
 
+  const deleteRequest = async () => {
+    if (!supabase || !request || !canManageRequest) return;
+
+    try {
+      if (isOwner) {
+        const { error } = await supabase
+          .from("prompt_requests")
+          .update({ is_hidden: true, updated_at: new Date().toISOString() })
+          .eq("id", request.id);
+
+        if (error) throw new Error(error.message);
+      } else {
+        if (statusPassword.length < 4) {
+          setMessage("비밀번호는 4자 이상이어야 합니다.");
+          return;
+        }
+
+        const { error } = await supabase.rpc("delete_guest_prompt_request", {
+          p_prompt_request_id: request.id,
+          p_password: statusPassword,
+        });
+
+        if (error) throw new Error(error.message);
+      }
+
+      router.push("/requests");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "요청 글을 삭제할 수 없습니다.");
+    }
+  };
+
+  const deleteAnswer = async (answer: PromptRequestAnswerRow) => {
+    if (!supabase) return;
+
+    try {
+      if (session && answer.author_id === session.user.id) {
+        const { error } = await supabase
+          .from("prompt_request_answers")
+          .update({ is_hidden: true, updated_at: new Date().toISOString() })
+          .eq("id", answer.id);
+
+        if (error) throw new Error(error.message);
+      } else {
+        const password = answerPasswords[answer.id] ?? "";
+
+        if (password.length < 4) {
+          setAnswerMessage("비밀번호는 4자 이상이어야 합니다.");
+          return;
+        }
+
+        const { error } = await supabase.rpc("delete_guest_prompt_request_answer", {
+          p_answer_id: answer.id,
+          p_password: password,
+        });
+
+        if (error) throw new Error(error.message);
+      }
+
+      setAnswerPasswords({ ...answerPasswords, [answer.id]: "" });
+      setAnswerMessage("답변을 삭제했습니다.");
+      await loadRequest();
+    } catch (error) {
+      setAnswerMessage(error instanceof Error ? error.message : "답변을 삭제할 수 없습니다.");
+    }
+  };
+
   return (
     <main className="site-shell dc-shell">
       <header className="topbar dc-topbar">
@@ -341,7 +410,7 @@ export default function PromptRequestDetailPage() {
               <p className="dc-board-post-body">{request.body}</p>
 
               <div className="request-status-tools">
-                {!isOwner && !request.author_id && (
+                {canManageRequest && !isOwner && (
                   <input
                     value={statusPassword}
                     onChange={(event) => setStatusPassword(event.target.value)}
@@ -350,13 +419,21 @@ export default function PromptRequestDetailPage() {
                     aria-label="요청글 비밀번호"
                   />
                 )}
-                <button type="button" onClick={() => updateStatus("resolved")}>
-                  <CheckCircle2 size={14} aria-hidden="true" />
-                  해결됨
-                </button>
-                <button type="button" onClick={() => updateStatus("open")}>
-                  미해결
-                </button>
+                {canManageRequest && (
+                  <>
+                    <button type="button" onClick={() => updateStatus("resolved")}>
+                      <CheckCircle2 size={14} aria-hidden="true" />
+                      해결됨
+                    </button>
+                    <button type="button" onClick={() => updateStatus("open")}>
+                      미해결
+                    </button>
+                    <button type="button" onClick={deleteRequest}>
+                      <Trash2 size={14} aria-hidden="true" />
+                      삭제
+                    </button>
+                  </>
+                )}
                 <ReportButton
                   targetType="prompt_request"
                   targetId={request.id}
@@ -468,6 +545,28 @@ export default function PromptRequestDetailPage() {
                         {answer.settings && <span>설정: {answer.settings}</span>}
                         {answer.negative_prompt && <p>네거티브: {answer.negative_prompt}</p>}
                         {answer.explanation && <p>{answer.explanation}</p>}
+                      </div>
+                    )}
+                    {(!answer.author_id || session?.user.id === answer.author_id) && (
+                      <div className="dc-comment-tools">
+                        {!answer.author_id && (
+                          <input
+                            value={answerPasswords[answer.id] ?? ""}
+                            onChange={(event) =>
+                              setAnswerPasswords({
+                                ...answerPasswords,
+                                [answer.id]: event.target.value,
+                              })
+                            }
+                            placeholder="삭제 비밀번호"
+                            type="password"
+                            aria-label="답변 삭제 비밀번호"
+                          />
+                        )}
+                        <button type="button" onClick={() => deleteAnswer(answer)}>
+                          <Trash2 size={13} aria-hidden="true" />
+                          삭제
+                        </button>
                       </div>
                     )}
                   </section>
