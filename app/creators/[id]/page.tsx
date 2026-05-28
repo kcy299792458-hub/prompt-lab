@@ -271,7 +271,7 @@ export default function CreatorProfilePage() {
 
             <section className="creator-section">
               <div className="section-heading">
-                <h2>대표 이미지</h2>
+                <h2>최근 업로드</h2>
                 <span>최근 6개</span>
               </div>
               {posts.length > 0 ? (
@@ -284,7 +284,7 @@ export default function CreatorProfilePage() {
                   ))}
                 </div>
               ) : (
-                <p className="dc-empty-message">아직 대표 이미지가 없습니다.</p>
+                <p className="dc-empty-message">아직 업로드한 이미지가 없습니다.</p>
               )}
             </section>
 
