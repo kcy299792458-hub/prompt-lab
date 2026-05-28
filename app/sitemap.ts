@@ -13,15 +13,10 @@ import {
   fetchSitemapCreators,
   fetchSitemapImagePosts,
   fetchSitemapResolvedRequests,
-  getPostImages,
 } from "@/lib/seo-dynamic";
 
 function sitemapUrl(pathOrUrl: string) {
   return new URL(pathOrUrl.startsWith("http") ? pathOrUrl : absoluteUrl(pathOrUrl)).toString();
-}
-
-function sitemapImageUrl(pathOrUrl: string) {
-  return sitemapUrl(pathOrUrl).replace(/&/g, "&amp;");
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -63,14 +58,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.75,
-      images: [sitemapImageUrl(prompt.image)],
     })),
     ...uploadedPosts.map((post) => ({
       url: sitemapUrl(`${SITE_URL}/images/${post.id}`),
       lastModified: new Date(post.updated_at || post.created_at),
       changeFrequency: "weekly" as const,
       priority: 0.72,
-      images: getPostImages(post).map(sitemapImageUrl),
     })),
     ...creators.map((creator) => ({
       url: sitemapUrl(`${SITE_URL}/creators/${creator.id}`),
