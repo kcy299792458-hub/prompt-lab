@@ -175,7 +175,10 @@ export default function UploadedImageDetailPage() {
                   <p>{post.description || "설명이 없습니다."}</p>
                   <div className="author-line dc-author-line">
                     <span>
-                      <UserRound size={14} aria-hidden="true" /> 작성자 @{authorName}
+                      <UserRound size={14} aria-hidden="true" /> 작성자{" "}
+                      <Link className="creator-inline-link" href={`/creators/${post.author_id}`}>
+                        @{authorName}
+                      </Link>
                     </span>
                     <span>{images.length}장</span>
                   </div>
@@ -228,7 +231,11 @@ export default function UploadedImageDetailPage() {
             <aside className="detail-side">
               <div className="spec-grid">
                 <span>작성자</span>
-                <strong>@{authorName}</strong>
+                <strong>
+                  <Link className="creator-inline-link" href={`/creators/${post.author_id}`}>
+                    @{authorName}
+                  </Link>
+                </strong>
                 <span>모델</span>
                 <strong>{post.model}</strong>
                 <span>이미지</span>

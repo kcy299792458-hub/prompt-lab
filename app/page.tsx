@@ -52,6 +52,7 @@ type GalleryItem = {
   href: string;
   tags: string[];
   authorName: string;
+  authorId?: string;
   sortKey: number;
 };
 
@@ -97,6 +98,7 @@ function uploadedToGalleryItem(post: UploadedImagePostRow): GalleryItem {
     href: `/images/${post.id}`,
     tags: post.tags ?? [],
     authorName: getProfileNickname(post.profiles),
+    authorId: post.author_id,
     sortKey: new Date(post.created_at).getTime(),
   };
 }
@@ -283,6 +285,7 @@ export default function Home() {
       string,
       {
         authorName: string;
+        authorId: string;
         postCount: number;
         latestAt: number;
         latestHref: string;
@@ -300,6 +303,7 @@ export default function Home() {
       if (!current) {
         creatorMap.set(post.author_id, {
           authorName,
+          authorId: post.author_id,
           postCount: 1,
           latestAt: createdAt,
           latestHref: `/images/${post.id}`,
@@ -419,7 +423,7 @@ export default function Home() {
               weeklyCreators.map((creator, index) => (
                 <li key={`${creator.authorName}-${creator.latestAt}`}>
                   <span className="dc-rank-num">{index + 1}</span>
-                  <Link href={creator.latestHref} title={creator.latestTitle}>
+                  <Link href={`/creators/${creator.authorId}`} title={creator.latestTitle}>
                     @{creator.authorName}
                   </Link>
                   <small>{creator.postCount}글</small>
