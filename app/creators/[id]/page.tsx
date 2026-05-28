@@ -271,25 +271,6 @@ export default function CreatorProfilePage() {
 
             <section className="creator-section">
               <div className="section-heading">
-                <h2>최근 업로드</h2>
-                <span>최근 6개</span>
-              </div>
-              {posts.length > 0 ? (
-                <div className="creator-featured-grid">
-                  {posts.slice(0, 6).map((post) => (
-                    <Link key={post.id} href={`/images/${post.id}`} className="creator-featured-card">
-                      <img src={getPostImage(post)} alt={`${post.title} 결과 이미지`} />
-                      <strong>{post.title}</strong>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <p className="dc-empty-message">아직 업로드한 이미지가 없습니다.</p>
-              )}
-            </section>
-
-            <section className="creator-section">
-              <div className="section-heading">
                 <h2>업로드한 프롬프트</h2>
                 <span>{posts.length}개</span>
               </div>
