@@ -65,6 +65,7 @@ export default function PromptDetailPage() {
   );
 
   const promptVersions = prompt ? getPromptVersions(prompt) : [];
+  const primaryPromptVersion = promptVersions[0] ?? null;
   const authorName = prompt?.authorName || "운영자";
 
   const loadInteractions = async (currentVisitorKey = visitorKey) => {
@@ -295,36 +296,32 @@ export default function PromptDetailPage() {
 
           <section className="prompt-detail-section">
             <div className="section-heading">
-              <h2>프롬프트 원문</h2>
-              <span>{promptVersions.length}개 버전</span>
+              <h2>실제 프롬프트</h2>
+              <span>원문 1개</span>
             </div>
             <div className="prompt-versions">
-              {promptVersions.map((version, index) => {
-                const copyKey = `${prompt.id}-${index}`;
-
-                return (
-                  <section className="prompt-version" key={copyKey}>
-                    <div className="prompt-version-header">
-                      <div>
-                        <strong>{version.label}</strong>
-                        <span>{version.language}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => copyPrompt(version.body, copyKey)}
-                      >
-                        {copiedKey === copyKey ? (
-                          <Check size={16} aria-hidden="true" />
-                        ) : (
-                          <Copy size={16} aria-hidden="true" />
-                        )}
-                        {copiedKey === copyKey ? "복사됨" : "복사"}
-                      </button>
+              {primaryPromptVersion && (
+                <section className="prompt-version" key={`${prompt.id}-primary`}>
+                  <div className="prompt-version-header">
+                    <div>
+                      <strong>실제 사용한 프롬프트</strong>
+                      <span>GPT Image 2.0 기준</span>
                     </div>
-                    <div className="prompt-body">{version.body}</div>
-                  </section>
-                );
-              })}
+                    <button
+                      type="button"
+                      onClick={() => copyPrompt(primaryPromptVersion.body, `${prompt.id}-primary`)}
+                    >
+                      {copiedKey === `${prompt.id}-primary` ? (
+                        <Check size={16} aria-hidden="true" />
+                      ) : (
+                        <Copy size={16} aria-hidden="true" />
+                      )}
+                      {copiedKey === `${prompt.id}-primary` ? "복사됨" : "복사"}
+                    </button>
+                  </div>
+                  <div className="prompt-body">{primaryPromptVersion.body}</div>
+                </section>
+              )}
             </div>
           </section>
 
@@ -404,7 +401,7 @@ export default function PromptDetailPage() {
             <span>스타일</span>
             <strong>{prompt.style}</strong>
             <span>원문</span>
-            <strong>{promptVersions.length}개</strong>
+            <strong>1개</strong>
           </div>
           <div className="tag-row">
             {prompt.tags.map((tag) => (

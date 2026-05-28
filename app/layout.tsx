@@ -10,19 +10,18 @@ export const metadata: Metadata = {
     template: "%s | 프롬프트랩",
   },
   description:
-    "AI 이미지 예시와 프롬프트 원문, 모델 정보를 함께 확인하는 이미지 프롬프트 갤러리.",
+    "GPT Image 2.0 기준 AI 이미지 예시와 실제 프롬프트 원문을 함께 확인하는 이미지 프롬프트 갤러리.",
   keywords: [
     "이미지 프롬프트",
     "AI 이미지",
     "프롬프트 공유",
     "프롬프트랩",
-    "Midjourney",
-    "GPT Image",
+    "GPT Image 2.0",
     "AI 커뮤니티",
   ],
   openGraph: {
     title: "프롬프트랩",
-    description: "이미지, 원문, 모델까지 한 번에 확인",
+    description: "이미지와 실제 프롬프트를 한 번에 확인",
     url: siteUrl,
     siteName: "프롬프트랩",
     locale: "ko_KR",
@@ -39,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "프롬프트랩",
-    description: "AI 이미지 예시와 프롬프트 원문, 모델 정보를 함께 확인하는 이미지 프롬프트 갤러리.",
+    description: "GPT Image 2.0 기준 AI 이미지 예시와 실제 프롬프트 원문을 함께 확인하는 갤러리.",
     images: ["/og-image-v2.png"],
   },
 };

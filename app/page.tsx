@@ -353,7 +353,7 @@ export default function Home() {
       <section className="dc-headline">
         <div>
           <h1>잘 뽑힌 프롬프트 모음</h1>
-          <p>이미지, 원문, 모델까지 한 번에 확인</p>
+          <p>이미지와 실제 프롬프트를 한 번에 확인</p>
         </div>
         <label className="dc-search">
           <Search size={17} aria-hidden="true" />
@@ -544,7 +544,7 @@ export default function Home() {
       <section className="submit-section dc-submit dc-upload-entry">
         <div>
           <p className="section-kicker">Upload</p>
-          <h2>이미지 결과와 프롬프트 원문을 같이 올리기</h2>
+          <h2>이미지 결과와 실제 프롬프트 1개를 같이 올리기</h2>
         </div>
         <Link href="/upload" className="primary-button">
           <Upload size={18} aria-hidden="true" />

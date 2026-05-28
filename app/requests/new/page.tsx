@@ -9,7 +9,6 @@ import { AuthControls } from "@/app/components/AuthControls";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const requestTypes = ["실사", "애니", "제품사진", "캐릭터", "리터칭", "배경", "기타"];
-const modelOptions = ["모델 미정", "Midjourney", "GPT Image", "Stable Diffusion", "기타"];
 const maxImageCount = 4;
 const maxImageSize = 5 * 1024 * 1024;
 
@@ -34,7 +33,7 @@ export default function NewPromptRequestPage() {
   const [form, setForm] = useState({
     title: "",
     body: "",
-    targetModel: "모델 미정",
+    targetModel: "GPT Image 2.0",
     requestType: "기타",
     guestNickname: "",
     password: "",
@@ -276,15 +275,7 @@ export default function NewPromptRequestPage() {
                 <option key={item}>{item}</option>
               ))}
             </select>
-            <select
-              value={form.targetModel}
-              onChange={(event) => setForm({ ...form, targetModel: event.target.value })}
-              aria-label="희망 모델"
-            >
-              {modelOptions.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
+            <input value="GPT Image 2.0" aria-label="희망 모델" readOnly />
             {!session && (
               <>
                 <input

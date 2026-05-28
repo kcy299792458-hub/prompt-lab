@@ -12,7 +12,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 type PromptVersionInsert = {
   image_post_id: string;
   label: string;
-  language: "ko" | "en" | "negative" | "settings";
+  language: "mixed";
   body: string;
 };
 
@@ -21,7 +21,7 @@ const maxImageSize = 10 * 1024 * 1024;
 const maxTagCount = 12;
 const maxTagLength = 24;
 
-const commonTagSuggestions = ["인스타트렌드", "Civitai", "Reddit", "Midjourney", "SDXL", "GPTImage"];
+const commonTagSuggestions = ["인스타트렌드", "사진감성", "상세묘사", "캐릭터", "제품사진", "GPTImage"];
 
 const tagSuggestionsByCategory: Record<string, string[]> = {
   "사진/시네마틱": ["시네마틱", "포토리얼", "필름룩", "폰카", "플래시", "거리사진", "다큐멘터리", "로우파이"],
@@ -107,14 +107,11 @@ export default function UploadPage() {
     title: "",
     description: "",
     category: categories.find((item) => item !== "전체") || "사진/시네마틱",
-    model: "",
+    model: "GPT Image 2.0",
     aspectRatio: "",
     style: "",
     tags: "",
-    koPrompt: "",
-    enPrompt: "",
-    negativePrompt: "",
-    settingsPrompt: "",
+    prompt: "",
   });
   const selectedTags = useMemo(() => parseTags(form.tags), [form.tags]);
   const selectedTagKeys = useMemo(
@@ -257,36 +254,10 @@ export default function UploadPage() {
       return;
     }
 
-    const versionDrafts: PromptVersionInsert[] = [
-      {
-        image_post_id: "",
-        label: "한국어 원문",
-        language: "ko",
-        body: form.koPrompt.trim(),
-      },
-      {
-        image_post_id: "",
-        label: "영어 원문",
-        language: "en",
-        body: form.enPrompt.trim(),
-      },
-      {
-        image_post_id: "",
-        label: "네거티브",
-        language: "negative",
-        body: form.negativePrompt.trim(),
-      },
-      {
-        image_post_id: "",
-        label: "추가 설정",
-        language: "settings",
-        body: form.settingsPrompt.trim(),
-      },
-    ];
-    const versions = versionDrafts.filter((version) => version.body.length > 0);
+    const promptBody = form.prompt.trim();
 
-    if (versions.length === 0) {
-      setMessage("프롬프트 원문을 1개 이상 입력하세요.");
+    if (!promptBody) {
+      setMessage("실제로 사용한 프롬프트를 입력하세요.");
       return;
     }
 
@@ -313,7 +284,7 @@ export default function UploadPage() {
           title: form.title.trim(),
           description: form.description.trim(),
           category: form.category,
-          model: form.model.trim() || "미기재",
+          model: "GPT Image 2.0",
           aspect_ratio: form.aspectRatio.trim() || "미기재",
           style: form.style.trim() || "미기재",
           image_url: imageUrls[0],
@@ -331,12 +302,14 @@ export default function UploadPage() {
         );
       }
 
-      const versionRows = versions.map((version) => ({
-        ...version,
+      const versionRow: PromptVersionInsert = {
         image_post_id: postData.id as string,
-      }));
+        label: "실제 프롬프트",
+        language: "mixed",
+        body: promptBody,
+      };
 
-      const { error: versionError } = await supabase.from("prompt_versions").insert(versionRows);
+      const { error: versionError } = await supabase.from("prompt_versions").insert(versionRow);
 
       if (versionError) {
         throw new Error(versionError.message);
@@ -374,7 +347,7 @@ export default function UploadPage() {
       <section className="dc-headline">
         <div>
           <h1>이미지 프롬프트 업로드</h1>
-          <p>결과 이미지 여러 장과 프롬프트 원문, 모델 정보를 함께 등록</p>
+          <p>GPT Image 2.0에서 실제로 사용한 프롬프트 1개와 결과 이미지를 함께 등록</p>
         </div>
         <Link href="/" className="primary-button dc-write-button">
           <ArrowLeft size={15} aria-hidden="true" />
@@ -408,12 +381,7 @@ export default function UploadPage() {
                   <option key={item}>{item}</option>
                 ))}
             </select>
-            <input
-              value={form.model}
-              onChange={(event) => setForm({ ...form, model: event.target.value })}
-              placeholder="사용 모델 예: Midjourney v6, GPT Image"
-              aria-label="사용 모델"
-            />
+            <input value="GPT Image 2.0" aria-label="사용 모델" readOnly />
             <input
               value={form.aspectRatio}
               onChange={(event) => setForm({ ...form, aspectRatio: event.target.value })}
@@ -501,32 +469,13 @@ export default function UploadPage() {
             </div>
           )}
 
-          <div className="upload-prompt-grid">
-            <textarea
-              value={form.koPrompt}
-              onChange={(event) => setForm({ ...form, koPrompt: event.target.value })}
-              placeholder="한국어 프롬프트 원문"
-              aria-label="한국어 프롬프트 원문"
-            />
-            <textarea
-              value={form.enPrompt}
-              onChange={(event) => setForm({ ...form, enPrompt: event.target.value })}
-              placeholder="영어 프롬프트 원문"
-              aria-label="영어 프롬프트 원문"
-            />
-            <textarea
-              value={form.negativePrompt}
-              onChange={(event) => setForm({ ...form, negativePrompt: event.target.value })}
-              placeholder="네거티브 프롬프트"
-              aria-label="네거티브 프롬프트"
-            />
-            <textarea
-              value={form.settingsPrompt}
-              onChange={(event) => setForm({ ...form, settingsPrompt: event.target.value })}
-              placeholder="시드, CFG, 스텝, LoRA 등 추가 설정"
-              aria-label="추가 설정"
-            />
-          </div>
+          <textarea
+            value={form.prompt}
+            onChange={(event) => setForm({ ...form, prompt: event.target.value })}
+            placeholder="실제로 넣은 프롬프트 원문"
+            aria-label="실제로 넣은 프롬프트 원문"
+            className="upload-single-prompt-input"
+          />
 
           {message && <p className="dc-status-message">{message}</p>}
 

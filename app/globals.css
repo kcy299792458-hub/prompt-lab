@@ -2732,6 +2732,11 @@ body,
   resize: vertical;
 }
 
+.upload-single-prompt-input {
+  min-height: 230px;
+  resize: vertical;
+}
+
 .upload-prompt-grid {
   display: grid;
   gap: 8px;

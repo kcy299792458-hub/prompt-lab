@@ -80,10 +80,6 @@ export default function PromptRequestDetailPage() {
     guestNickname: "",
     password: "",
     promptBody: "",
-    negativePrompt: "",
-    model: "",
-    settings: "",
-    explanation: "",
   });
 
   const loadRequest = async () => {
@@ -197,10 +193,10 @@ export default function PromptRequestDetailPage() {
           prompt_request_id: request.id,
           author_id: session.user.id,
           prompt_body: answerForm.promptBody.trim(),
-          negative_prompt: answerForm.negativePrompt.trim(),
-          model: answerForm.model.trim(),
-          settings: answerForm.settings.trim(),
-          explanation: answerForm.explanation.trim(),
+          negative_prompt: "",
+          model: "GPT Image 2.0",
+          settings: "",
+          explanation: "",
         });
 
         if (error) throw new Error(error.message);
@@ -210,10 +206,10 @@ export default function PromptRequestDetailPage() {
           p_prompt_body: answerForm.promptBody.trim(),
           p_guest_nickname: answerForm.guestNickname.trim(),
           p_password: answerForm.password,
-          p_negative_prompt: answerForm.negativePrompt.trim(),
-          p_model: answerForm.model.trim(),
-          p_settings: answerForm.settings.trim(),
-          p_explanation: answerForm.explanation.trim(),
+          p_negative_prompt: "",
+          p_model: "GPT Image 2.0",
+          p_settings: "",
+          p_explanation: "",
         });
 
         if (error) throw new Error(error.message);
@@ -223,10 +219,6 @@ export default function PromptRequestDetailPage() {
         guestNickname: "",
         password: "",
         promptBody: "",
-        negativePrompt: "",
-        model: "",
-        settings: "",
-        explanation: "",
       });
       await loadRequest();
     } catch (error) {
@@ -375,18 +367,13 @@ export default function PromptRequestDetailPage() {
               <ol>
                 <li>
                   <span className="dc-rank-num">1</span>
-                  <span>프롬프트 원문</span>
+                  <span>실제 프롬프트 원문</span>
                   <small>필수</small>
                 </li>
                 <li>
                   <span className="dc-rank-num">2</span>
-                  <span>모델/설정</span>
-                  <small>권장</small>
-                </li>
-                <li>
-                  <span className="dc-rank-num">3</span>
-                  <span>네거티브</span>
-                  <small>선택</small>
+                  <span>GPT Image 2.0 기준</span>
+                  <small>고정</small>
                 </li>
               </ol>
             </aside>
@@ -429,38 +416,6 @@ export default function PromptRequestDetailPage() {
                 }
                 placeholder="프롬프트 원문"
                 aria-label="프롬프트 원문"
-              />
-              <div className="upload-form-grid">
-                <input
-                  value={answerForm.model}
-                  onChange={(event) => setAnswerForm({ ...answerForm, model: event.target.value })}
-                  placeholder="추천 모델"
-                  aria-label="추천 모델"
-                />
-                <input
-                  value={answerForm.settings}
-                  onChange={(event) =>
-                    setAnswerForm({ ...answerForm, settings: event.target.value })
-                  }
-                  placeholder="설정 예: --ar 4:5, CFG 7"
-                  aria-label="설정"
-                />
-              </div>
-              <textarea
-                value={answerForm.negativePrompt}
-                onChange={(event) =>
-                  setAnswerForm({ ...answerForm, negativePrompt: event.target.value })
-                }
-                placeholder="네거티브 프롬프트"
-                aria-label="네거티브 프롬프트"
-              />
-              <textarea
-                value={answerForm.explanation}
-                onChange={(event) =>
-                  setAnswerForm({ ...answerForm, explanation: event.target.value })
-                }
-                placeholder="설명 또는 사용 팁"
-                aria-label="설명"
               />
               <button className="primary-button dc-write-submit" type="submit" disabled={isSubmitting}>
                 <Send size={15} aria-hidden="true" />

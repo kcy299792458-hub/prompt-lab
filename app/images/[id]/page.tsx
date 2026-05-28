@@ -36,14 +36,6 @@ function getProfileNickname(profile: UploadedImagePostRow["profiles"]) {
   return profile?.nickname || "회원";
 }
 
-function getLanguageLabel(language: PromptVersionRow["language"]) {
-  if (language === "ko") return "한국어";
-  if (language === "en") return "영어";
-  if (language === "negative") return "네거티브";
-  if (language === "settings") return "설정";
-  return "한영 혼합";
-}
-
 export default function UploadedImageDetailPage() {
   const params = useParams<{ id: string }>();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -124,6 +116,7 @@ export default function UploadedImageDetailPage() {
 
   const images = post?.image_urls && post.image_urls.length > 0 ? post.image_urls : post ? [post.image_url] : [];
   const authorName = post ? getProfileNickname(post.profiles) : "회원";
+  const primaryPrompt = versions[0] ?? null;
 
   return (
     <main className="site-shell dc-shell">
@@ -200,30 +193,31 @@ export default function UploadedImageDetailPage() {
 
               <section className="prompt-detail-section">
                 <div className="section-heading">
-                  <h2>프롬프트 원문</h2>
-                  <span>{versions.length}개 버전</span>
+                  <h2>실제 프롬프트</h2>
+                  <span>GPT Image 2.0</span>
                 </div>
                 <div className="prompt-versions">
-                  {versions.length > 0 ? (
-                    versions.map((version) => (
-                      <section className="prompt-version" key={version.id}>
-                        <div className="prompt-version-header">
-                          <div>
-                            <strong>{version.label}</strong>
-                            <span>{getLanguageLabel(version.language)}</span>
-                          </div>
-                          <button type="button" onClick={() => copyPrompt(version.body, version.id)}>
-                            {copiedKey === version.id ? (
-                              <Check size={16} aria-hidden="true" />
-                            ) : (
-                              <Copy size={16} aria-hidden="true" />
-                            )}
-                            {copiedKey === version.id ? "복사됨" : "복사"}
-                          </button>
+                  {primaryPrompt ? (
+                    <section className="prompt-version" key={primaryPrompt.id}>
+                      <div className="prompt-version-header">
+                        <div>
+                          <strong>실제 사용한 프롬프트</strong>
+                          <span>원문 1개</span>
                         </div>
-                        <div className="prompt-body">{version.body}</div>
-                      </section>
-                    ))
+                        <button
+                          type="button"
+                          onClick={() => copyPrompt(primaryPrompt.body, primaryPrompt.id)}
+                        >
+                          {copiedKey === primaryPrompt.id ? (
+                            <Check size={16} aria-hidden="true" />
+                          ) : (
+                            <Copy size={16} aria-hidden="true" />
+                          )}
+                          {copiedKey === primaryPrompt.id ? "복사됨" : "복사"}
+                        </button>
+                      </div>
+                      <div className="prompt-body">{primaryPrompt.body}</div>
+                    </section>
                   ) : (
                     <p className="dc-empty-message">등록된 프롬프트 원문이 없습니다.</p>
                   )}
