@@ -130,40 +130,53 @@ begin
 end;
 $$;
 
-drop trigger if exists image_posts_authenticated_rate_limit on public.image_posts;
-create trigger image_posts_authenticated_rate_limit
-before insert on public.image_posts
-for each row execute function public.enforce_authenticated_write_rate_limit_trigger('image_post');
+do $$
+begin
+  if to_regclass('public.image_posts') is not null then
+    drop trigger if exists image_posts_authenticated_rate_limit on public.image_posts;
+    create trigger image_posts_authenticated_rate_limit
+    before insert on public.image_posts
+    for each row execute function public.enforce_authenticated_write_rate_limit_trigger('image_post');
+  end if;
 
-drop trigger if exists board_posts_authenticated_rate_limit on public.board_posts;
-create trigger board_posts_authenticated_rate_limit
-before insert on public.board_posts
-for each row execute function public.enforce_authenticated_write_rate_limit_trigger('board_post');
+  if to_regclass('public.board_posts') is not null then
+    drop trigger if exists board_posts_authenticated_rate_limit on public.board_posts;
+    create trigger board_posts_authenticated_rate_limit
+    before insert on public.board_posts
+    for each row execute function public.enforce_authenticated_write_rate_limit_trigger('board_post');
+  end if;
 
-drop trigger if exists comments_authenticated_rate_limit on public.comments;
-create trigger comments_authenticated_rate_limit
-before insert on public.comments
-for each row execute function public.enforce_authenticated_write_rate_limit_trigger('board_comment');
+  if to_regclass('public.comments') is not null then
+    drop trigger if exists comments_authenticated_rate_limit on public.comments;
+    create trigger comments_authenticated_rate_limit
+    before insert on public.comments
+    for each row execute function public.enforce_authenticated_write_rate_limit_trigger('board_comment');
+  end if;
 
-drop trigger if exists prompt_requests_authenticated_rate_limit on public.prompt_requests;
-create trigger prompt_requests_authenticated_rate_limit
-before insert on public.prompt_requests
-for each row execute function public.enforce_authenticated_write_rate_limit_trigger('prompt_request');
+  if to_regclass('public.prompt_requests') is not null then
+    drop trigger if exists prompt_requests_authenticated_rate_limit on public.prompt_requests;
+    create trigger prompt_requests_authenticated_rate_limit
+    before insert on public.prompt_requests
+    for each row execute function public.enforce_authenticated_write_rate_limit_trigger('prompt_request');
+  end if;
 
-drop trigger if exists prompt_request_answers_authenticated_rate_limit on public.prompt_request_answers;
-create trigger prompt_request_answers_authenticated_rate_limit
-before insert on public.prompt_request_answers
-for each row execute function public.enforce_authenticated_write_rate_limit_trigger('prompt_request_answer');
+  if to_regclass('public.prompt_request_answers') is not null then
+    drop trigger if exists prompt_request_answers_authenticated_rate_limit on public.prompt_request_answers;
+    create trigger prompt_request_answers_authenticated_rate_limit
+    before insert on public.prompt_request_answers
+    for each row execute function public.enforce_authenticated_write_rate_limit_trigger('prompt_request_answer');
+  end if;
+end;
+$$;
 
-drop function if exists public.create_guest_board_post(text, text, text, text, text, text[]);
 create or replace function public.create_guest_board_post(
   p_category text,
   p_title text,
   p_body text,
   p_guest_nickname text,
   p_password text,
-  p_image_urls text[] default '{}'::text[],
-  p_visitor_key text default null
+  p_visitor_key text,
+  p_image_urls text[] default '{}'::text[]
 )
 returns uuid
 language plpgsql
@@ -208,13 +221,12 @@ begin
 end;
 $$;
 
-drop function if exists public.create_guest_board_comment(uuid, text, text, text);
 create or replace function public.create_guest_board_comment(
   p_board_post_id uuid,
   p_body text,
   p_guest_nickname text,
   p_password text,
-  p_visitor_key text default null
+  p_visitor_key text
 )
 returns uuid
 language plpgsql
@@ -255,13 +267,12 @@ begin
 end;
 $$;
 
-drop function if exists public.create_guest_prompt_comment(integer, text, text, text);
 create or replace function public.create_guest_prompt_comment(
   p_prompt_id integer,
   p_body text,
   p_guest_nickname text,
   p_password text,
-  p_visitor_key text default null
+  p_visitor_key text
 )
 returns uuid
 language plpgsql
@@ -306,16 +317,15 @@ begin
 end;
 $$;
 
-drop function if exists public.create_guest_prompt_request(text, text, text, text, text, text, text[]);
 create or replace function public.create_guest_prompt_request(
   p_title text,
   p_body text,
   p_guest_nickname text,
   p_password text,
+  p_visitor_key text,
   p_target_model text default '',
   p_request_type text default '기타',
-  p_reference_image_urls text[] default '{}'::text[],
-  p_visitor_key text default null
+  p_reference_image_urls text[] default '{}'::text[]
 )
 returns uuid
 language plpgsql
@@ -362,17 +372,16 @@ begin
 end;
 $$;
 
-drop function if exists public.create_guest_prompt_request_answer(uuid, text, text, text, text, text, text, text);
 create or replace function public.create_guest_prompt_request_answer(
   p_prompt_request_id uuid,
   p_prompt_body text,
   p_guest_nickname text,
   p_password text,
+  p_visitor_key text,
   p_negative_prompt text default '',
   p_model text default '',
   p_settings text default '',
-  p_explanation text default '',
-  p_visitor_key text default null
+  p_explanation text default ''
 )
 returns uuid
 language plpgsql
@@ -421,9 +430,32 @@ begin
 end;
 $$;
 
+do $$
+begin
+  if to_regprocedure('public.create_guest_board_post(text,text,text,text,text)') is not null then
+    revoke execute on function public.create_guest_board_post(text,text,text,text,text) from public, anon, authenticated;
+  end if;
+  if to_regprocedure('public.create_guest_board_post(text,text,text,text,text,text[])') is not null then
+    revoke execute on function public.create_guest_board_post(text,text,text,text,text,text[]) from public, anon, authenticated;
+  end if;
+  if to_regprocedure('public.create_guest_board_comment(uuid,text,text,text)') is not null then
+    revoke execute on function public.create_guest_board_comment(uuid,text,text,text) from public, anon, authenticated;
+  end if;
+  if to_regprocedure('public.create_guest_prompt_comment(integer,text,text,text)') is not null then
+    revoke execute on function public.create_guest_prompt_comment(integer,text,text,text) from public, anon, authenticated;
+  end if;
+  if to_regprocedure('public.create_guest_prompt_request(text,text,text,text,text,text,text[])') is not null then
+    revoke execute on function public.create_guest_prompt_request(text,text,text,text,text,text,text[]) from public, anon, authenticated;
+  end if;
+  if to_regprocedure('public.create_guest_prompt_request_answer(uuid,text,text,text,text,text,text,text)') is not null then
+    revoke execute on function public.create_guest_prompt_request_answer(uuid,text,text,text,text,text,text,text) from public, anon, authenticated;
+  end if;
+end;
+$$;
+
 grant execute on function public.enforce_write_rate_limit(text, text, uuid) to anon, authenticated;
-grant execute on function public.create_guest_board_post(text, text, text, text, text, text[], text) to anon, authenticated;
+grant execute on function public.create_guest_board_post(text, text, text, text, text, text, text[]) to anon, authenticated;
 grant execute on function public.create_guest_board_comment(uuid, text, text, text, text) to anon, authenticated;
 grant execute on function public.create_guest_prompt_comment(integer, text, text, text, text) to anon, authenticated;
-grant execute on function public.create_guest_prompt_request(text, text, text, text, text, text, text[], text) to anon, authenticated;
+grant execute on function public.create_guest_prompt_request(text, text, text, text, text, text, text, text[]) to anon, authenticated;
 grant execute on function public.create_guest_prompt_request_answer(uuid, text, text, text, text, text, text, text, text) to anon, authenticated;
