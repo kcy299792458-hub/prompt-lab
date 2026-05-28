@@ -37,15 +37,6 @@ type PromptCommentActivityRow = {
   body: string;
   created_at: string;
 };
-type RequestPostRow = {
-  id: string;
-  title: string;
-  guest_nickname: string | null;
-  status: "open" | "resolved";
-  created_at: string;
-  profiles?: { nickname: string } | { nickname: string }[] | null;
-};
-
 type GalleryItem = {
   kind: "seed" | "uploaded";
   id: string;
@@ -117,7 +108,6 @@ export default function Home() {
   const [promptCounts, setPromptCounts] = useState<PromptCounts>({});
   const [uploadedPosts, setUploadedPosts] = useState<UploadedImagePostRow[]>([]);
   const [recentPromptComments, setRecentPromptComments] = useState<PromptCommentActivityRow[]>([]);
-  const [requestPosts, setRequestPosts] = useState<RequestPostRow[]>([]);
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   useEffect(() => {
@@ -181,28 +171,19 @@ export default function Home() {
     async function loadCommunityPanels() {
       const promptIds = prompts.map((prompt) => prompt.id);
 
-      const [commentResult, requestResult] = await Promise.all([
-        client
-          .from("prompt_comments")
-          .select("id, prompt_id, guest_nickname, body, created_at")
-          .eq("is_hidden", false)
-          .in("prompt_id", promptIds)
-          .order("created_at", { ascending: false })
-          .limit(5),
-        client
-          .from("prompt_requests")
-          .select("id, title, guest_nickname, status, created_at, profiles(nickname)")
-          .eq("is_hidden", false)
-          .order("created_at", { ascending: false })
-          .limit(8),
-      ]);
+      const commentResult = await client
+        .from("prompt_comments")
+        .select("id, prompt_id, guest_nickname, body, created_at")
+        .eq("is_hidden", false)
+        .in("prompt_id", promptIds)
+        .order("created_at", { ascending: false })
+        .limit(5);
 
       if (!isMounted) return;
 
       setRecentPromptComments(
         commentResult.error ? [] : ((commentResult.data ?? []) as PromptCommentActivityRow[]),
       );
-      setRequestPosts(requestResult.error ? [] : ((requestResult.data ?? []) as RequestPostRow[]));
     }
 
     loadCommunityPanels();
@@ -470,27 +451,6 @@ export default function Home() {
           </ol>
         </aside>
 
-        <aside className="dc-rank-box">
-          <div className="dc-rank-head">
-            <strong>프롬프트 요청 게시판</strong>
-            <Link className="dc-rank-head-link" href="/requests">
-              바로가기
-            </Link>
-          </div>
-          <ol>
-            {requestPosts.length > 0 ? (
-              requestPosts.map((post, index) => (
-                <li key={post.id}>
-                  <span className="dc-rank-num">{index + 1}</span>
-                  <Link href={`/requests/${post.id}`}>{post.title}</Link>
-                  <small>{post.status === "resolved" ? "해결" : "미해결"}</small>
-                </li>
-              ))
-            ) : (
-              <li className="dc-rank-empty">요청 글이 없습니다</li>
-            )}
-          </ol>
-        </aside>
       </section>
 
       <section id="gallery" className="dc-board-layout">
