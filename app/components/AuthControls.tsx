@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { Session } from "@supabase/supabase-js";
 import { LogOut, ShieldCheck, UserRound, X } from "lucide-react";
 import {
@@ -9,11 +10,16 @@ import {
 } from "@/lib/supabase/client";
 
 type AuthMode = "sign-in" | "sign-up";
+type ProfileRow = {
+  nickname: string;
+  role: "user" | "admin";
+};
 
 export function AuthControls() {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("sign-in");
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -40,6 +46,29 @@ export function AuthControls() {
 
     return () => subscription.unsubscribe();
   }, [supabase]);
+
+  useEffect(() => {
+    if (!supabase || !session?.user.id) {
+      setProfile(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    supabase
+      .from("profiles")
+      .select("nickname, role")
+      .eq("id", session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!isMounted) return;
+        setProfile((data as ProfileRow | null) ?? null);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.user.id, supabase]);
 
   const submit = async () => {
     if (!supabase) {
@@ -141,6 +170,7 @@ export function AuthControls() {
   };
 
   const displayName =
+    profile?.nickname ||
     session?.user.user_metadata.nickname ||
     session?.user.email?.split("@")[0] ||
     "user";
@@ -149,6 +179,11 @@ export function AuthControls() {
     <>
       {session ? (
         <div className="auth-user">
+          {profile?.role === "admin" && (
+            <Link className="auth-admin-link" href="/admin">
+              관리자
+            </Link>
+          )}
           <button className="auth-profile" type="button">
             <UserRound size={16} aria-hidden="true" />
             @{displayName}

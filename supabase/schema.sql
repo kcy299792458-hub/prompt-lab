@@ -1049,3 +1049,23 @@ $$;
 
 grant select on public.board_reactions to anon, authenticated;
 grant execute on function public.toggle_board_reaction(uuid, text) to anon, authenticated;
+
+drop policy if exists "admins can moderate prompt comments" on public.prompt_comments;
+create policy "admins can moderate prompt comments"
+on public.prompt_comments for update
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "admins can moderate prompt requests" on public.prompt_requests;
+create policy "admins can moderate prompt requests"
+on public.prompt_requests for update
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "admins can moderate prompt request answers" on public.prompt_request_answers;
+create policy "admins can moderate prompt request answers"
+on public.prompt_request_answers for update
+using (public.is_admin())
+with check (public.is_admin());
+
+grant execute on function public.is_admin() to anon, authenticated;
