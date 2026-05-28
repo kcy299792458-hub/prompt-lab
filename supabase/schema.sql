@@ -38,6 +38,11 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   nickname text not null unique check (char_length(nickname) between 2 and 24),
   role public.user_role not null default 'user',
+  bio text not null default '' check (char_length(bio) <= 180),
+  specialty text not null default '' check (char_length(specialty) <= 120),
+  website_url text not null default '' check (char_length(website_url) <= 300),
+  instagram_url text not null default '' check (char_length(instagram_url) <= 300),
+  x_url text not null default '' check (char_length(x_url) <= 300),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

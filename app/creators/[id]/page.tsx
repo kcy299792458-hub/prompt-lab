@@ -3,13 +3,29 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Bookmark, Copy, Eye, Heart, MessageCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Bookmark,
+  Copy,
+  ExternalLink,
+  Eye,
+  Heart,
+  MessageCircle,
+  Pencil,
+  Save,
+  X,
+} from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type ProfileRow = {
   id: string;
   nickname: string;
+  bio?: string | null;
+  specialty?: string | null;
+  website_url?: string | null;
+  instagram_url?: string | null;
+  x_url?: string | null;
   created_at: string;
 };
 
@@ -40,6 +56,14 @@ type CommentRow = {
 
 type PostCounts = Record<string, { likes: number; saves: number; comments: number }>;
 type CreatorPostSort = "latest" | "popular" | "copies" | "saves" | "comments" | "likes" | "views";
+type ProfileFormState = {
+  nickname: string;
+  bio: string;
+  specialty: string;
+  websiteUrl: string;
+  instagramUrl: string;
+  xUrl: string;
+};
 
 const creatorPostSortOptions: Array<{ label: string; value: CreatorPostSort }> = [
   { label: "최신순", value: "latest" },
@@ -74,6 +98,32 @@ function getPostImage(post: ImagePostRow) {
   return post.image_urls && post.image_urls.length > 0 ? post.image_urls[0] : post.image_url;
 }
 
+function getProfileForm(profile: ProfileRow | null): ProfileFormState {
+  return {
+    nickname: profile?.nickname ?? "",
+    bio: profile?.bio ?? "",
+    specialty: profile?.specialty ?? "",
+    websiteUrl: profile?.website_url ?? "",
+    instagramUrl: profile?.instagram_url ?? "",
+    xUrl: profile?.x_url ?? "",
+  };
+}
+
+function normalizeProfileUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+function splitSpecialties(value: string) {
+  return value
+    .split(/[,\n/]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
 export default function CreatorProfilePage() {
   const params = useParams<{ id: string }>();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -81,8 +131,35 @@ export default function CreatorProfilePage() {
   const [posts, setPosts] = useState<ImagePostRow[]>([]);
   const [counts, setCounts] = useState<PostCounts>({});
   const [postSort, setPostSort] = useState<CreatorPostSort>("latest");
+  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editForm, setEditForm] = useState<ProfileFormState>(() => getProfileForm(null));
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let isMounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) return;
+      setSessionUserId(data.session?.user.id ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSessionUserId(nextSession?.user.id ?? null);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   useEffect(() => {
     if (!supabase) {
@@ -101,7 +178,7 @@ export default function CreatorProfilePage() {
       const [profileResult, initialPostResult] = await Promise.all([
         client
           .from("profiles")
-          .select("id, nickname, created_at")
+          .select("id, nickname, bio, specialty, website_url, instagram_url, x_url, created_at")
           .eq("id", params.id)
           .maybeSingle(),
         client
@@ -115,8 +192,27 @@ export default function CreatorProfilePage() {
           .limit(100),
       ]);
 
+      let profileData = profileResult.data as ProfileRow | null;
+      let profileError = profileResult.error;
       let postRows = initialPostResult.data as ImagePostRow[] | null;
       let postError = initialPostResult.error;
+
+      if (
+        profileError?.message.includes("bio") ||
+        profileError?.message.includes("specialty") ||
+        profileError?.message.includes("website_url") ||
+        profileError?.message.includes("instagram_url") ||
+        profileError?.message.includes("x_url")
+      ) {
+        const retryProfileResult = await client
+          .from("profiles")
+          .select("id, nickname, created_at")
+          .eq("id", params.id)
+          .maybeSingle();
+
+        profileData = retryProfileResult.data as ProfileRow | null;
+        profileError = retryProfileResult.error;
+      }
 
       if (
         postError?.message.includes("image_urls") ||
@@ -137,8 +233,8 @@ export default function CreatorProfilePage() {
 
       if (!isMounted) return;
 
-      if (profileResult.error || postError) {
-        setMessage(profileResult.error?.message || postError?.message || "프로필을 불러올 수 없습니다.");
+      if (profileError || postError) {
+        setMessage(profileError?.message || postError?.message || "프로필을 불러올 수 없습니다.");
         setProfile(null);
         setPosts([]);
         setCounts({});
@@ -146,7 +242,7 @@ export default function CreatorProfilePage() {
         return;
       }
 
-      const nextProfile = (profileResult.data as ProfileRow | null) ?? null;
+      const nextProfile = profileData ?? null;
       const nextPosts = postRows ?? [];
       const postIds = nextPosts.map((post) => post.id);
       const nextCounts: PostCounts = {};
@@ -187,6 +283,9 @@ export default function CreatorProfilePage() {
       }
 
       setProfile(nextProfile);
+      setEditForm(getProfileForm(nextProfile));
+      setIsEditingProfile(false);
+      setProfileMessage("");
       setPosts(nextPosts);
       setCounts(nextCounts);
       setIsLoading(false);
@@ -198,6 +297,94 @@ export default function CreatorProfilePage() {
       isMounted = false;
     };
   }, [params.id, supabase]);
+
+  const isOwnProfile = Boolean(profile && sessionUserId === profile.id);
+
+  const updateEditForm = (key: keyof ProfileFormState, value: string) => {
+    setEditForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const saveProfile = async () => {
+    if (!supabase || !profile || !isOwnProfile) return;
+
+    const nickname = editForm.nickname.trim();
+    const bio = editForm.bio.trim();
+    const specialty = editForm.specialty.trim();
+    const websiteUrl = normalizeProfileUrl(editForm.websiteUrl);
+    const instagramUrl = normalizeProfileUrl(editForm.instagramUrl);
+    const xUrl = normalizeProfileUrl(editForm.xUrl);
+
+    if (nickname.length < 2 || nickname.length > 24) {
+      setProfileMessage("닉네임은 2자 이상 24자 이하로 입력하세요.");
+      return;
+    }
+
+    if (bio.length > 180) {
+      setProfileMessage("한 줄 소개는 180자 이하로 입력하세요.");
+      return;
+    }
+
+    if (specialty.length > 120) {
+      setProfileMessage("주력 분야는 120자 이하로 입력하세요.");
+      return;
+    }
+
+    setIsSavingProfile(true);
+    setProfileMessage("");
+
+    const result = await supabase
+      .from("profiles")
+      .update({
+        nickname,
+        bio,
+        specialty,
+        website_url: websiteUrl,
+        instagram_url: instagramUrl,
+        x_url: xUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", profile.id)
+      .select("id, nickname, bio, specialty, website_url, instagram_url, x_url, created_at")
+      .maybeSingle();
+
+    setIsSavingProfile(false);
+
+    if (result.error) {
+      if (
+        result.error.message.includes("bio") ||
+        result.error.message.includes("specialty") ||
+        result.error.message.includes("website_url") ||
+        result.error.message.includes("instagram_url") ||
+        result.error.message.includes("x_url")
+      ) {
+        setProfileMessage("프로필 편집을 사용하려면 013 SQL 실행이 필요합니다.");
+        return;
+      }
+
+      if (result.error.code === "23505") {
+        setProfileMessage("이미 사용 중인 닉네임입니다.");
+        return;
+      }
+
+      setProfileMessage(result.error.message || "프로필을 저장할 수 없습니다.");
+      return;
+    }
+
+    const nextProfile = (result.data as ProfileRow | null) ?? {
+      ...profile,
+      nickname,
+      bio,
+      specialty,
+      website_url: websiteUrl,
+      instagram_url: instagramUrl,
+      x_url: xUrl,
+    };
+
+    setProfile(nextProfile);
+    setEditForm(getProfileForm(nextProfile));
+    setIsEditingProfile(false);
+    setProfileMessage("프로필을 저장했습니다.");
+  };
 
   const stats = useMemo(() => {
     const categoryCounts = new Map<string, number>();
@@ -277,6 +464,21 @@ export default function CreatorProfilePage() {
   }, [counts, postSort, posts]);
 
   const avatarText = profile?.nickname.slice(0, 1).toUpperCase() || "?";
+  const profileBio = profile?.bio?.trim() ?? "";
+  const profileSpecialty = profile?.specialty?.trim() ?? "";
+  const specialtyItems =
+    profileSpecialty.length > 0
+      ? splitSpecialties(profileSpecialty)
+      : stats.topTags.length > 0
+        ? stats.topTags.map((tag) => `#${tag}`)
+        : stats.topCategory !== "아직 없음"
+          ? [stats.topCategory]
+          : [];
+  const profileLinks = [
+    { label: "웹사이트", href: profile?.website_url?.trim() ?? "" },
+    { label: "Instagram", href: profile?.instagram_url?.trim() ?? "" },
+    { label: "X", href: profile?.x_url?.trim() ?? "" },
+  ].filter((item) => item.href);
 
   return (
     <main className="site-shell dc-shell">
@@ -319,24 +521,56 @@ export default function CreatorProfilePage() {
               </div>
               <div className="creator-hero-main">
                 <p className="section-kicker">Creator</p>
-                <h1>@{profile.nickname}</h1>
+                <div className="creator-title-row">
+                  <h1>@{profile.nickname}</h1>
+                  {isOwnProfile && (
+                    <button
+                      type="button"
+                      className="creator-edit-button"
+                      onClick={() => {
+                        setEditForm(getProfileForm(profile));
+                        setProfileMessage("");
+                        setIsEditingProfile((current) => !current);
+                      }}
+                    >
+                      {isEditingProfile ? (
+                        <X size={14} aria-hidden="true" />
+                      ) : (
+                        <Pencil size={14} aria-hidden="true" />
+                      )}
+                      {isEditingProfile ? "닫기" : "프로필 수정"}
+                    </button>
+                  )}
+                </div>
                 <p>
-                  {stats.topCategory === "아직 없음"
+                  {profileBio ||
+                  (stats.topCategory === "아직 없음"
                     ? "아직 업로드한 이미지 프롬프트가 없습니다."
-                    : `${stats.topCategory} 중심으로 이미지 프롬프트를 올리는 크리에이터입니다.`}
+                    : `${stats.topCategory} 중심으로 이미지 프롬프트를 올리는 크리에이터입니다.`)}
                 </p>
                 <div className="creator-meta-row">
                   <span>첫 기록 {posts.length > 0 ? formatDate(posts[posts.length - 1].created_at) : formatDate(profile.created_at)}</span>
-                  <span>주력 {stats.topCategory}</span>
+                  <span>주력 {profileSpecialty || stats.topCategory}</span>
                 </div>
-                <div className="creator-specialty-row" aria-label="주력 분야">
-                  <strong>주력 분야</strong>
-                  {stats.topTags.length > 0 ? (
-                    stats.topTags.map((tag) => <span key={tag}>#{tag}</span>)
-                  ) : (
-                    <span>{stats.topCategory}</span>
-                  )}
-                </div>
+                {specialtyItems.length > 0 && (
+                  <div className="creator-specialty-row" aria-label="주력 분야">
+                    <strong>주력 분야</strong>
+                    {specialtyItems.map((item) => (
+                      <span key={item}>{item.startsWith("#") ? item : `#${item}`}</span>
+                    ))}
+                  </div>
+                )}
+                {profileLinks.length > 0 && (
+                  <div className="creator-link-row" aria-label="크리에이터 외부 링크">
+                    {profileLinks.map((item) => (
+                      <a key={item.label} href={item.href} target="_blank" rel="noreferrer">
+                        <ExternalLink size={13} aria-hidden="true" />
+                        {item.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {profileMessage && !isEditingProfile && <p className="creator-save-message">{profileMessage}</p>}
               </div>
               <div className="creator-stat-grid">
                 <div>
@@ -365,6 +599,89 @@ export default function CreatorProfilePage() {
                 </div>
               </div>
             </section>
+
+            {isOwnProfile && isEditingProfile && (
+              <section className="creator-section creator-edit-panel">
+                <div className="section-heading">
+                  <h2>내 프로필 수정</h2>
+                  <span>작성자 소개</span>
+                </div>
+                <div className="creator-edit-grid">
+                  <label>
+                    <span>닉네임</span>
+                    <input
+                      value={editForm.nickname}
+                      onChange={(event) => updateEditForm("nickname", event.target.value)}
+                      maxLength={24}
+                    />
+                  </label>
+                  <label>
+                    <span>주력 분야</span>
+                    <input
+                      value={editForm.specialty}
+                      onChange={(event) => updateEditForm("specialty", event.target.value)}
+                      placeholder="예: 실사 제품사진, 폰카 감성, 호러"
+                      maxLength={120}
+                    />
+                  </label>
+                  <label className="creator-edit-wide">
+                    <span>한 줄 소개</span>
+                    <textarea
+                      value={editForm.bio}
+                      onChange={(event) => updateEditForm("bio", event.target.value)}
+                      placeholder="내가 주로 만드는 프롬프트 스타일을 적어보세요."
+                      maxLength={180}
+                    />
+                  </label>
+                  <label>
+                    <span>웹사이트</span>
+                    <input
+                      value={editForm.websiteUrl}
+                      onChange={(event) => updateEditForm("websiteUrl", event.target.value)}
+                      placeholder="https://..."
+                      maxLength={300}
+                    />
+                  </label>
+                  <label>
+                    <span>Instagram</span>
+                    <input
+                      value={editForm.instagramUrl}
+                      onChange={(event) => updateEditForm("instagramUrl", event.target.value)}
+                      placeholder="https://..."
+                      maxLength={300}
+                    />
+                  </label>
+                  <label>
+                    <span>X</span>
+                    <input
+                      value={editForm.xUrl}
+                      onChange={(event) => updateEditForm("xUrl", event.target.value)}
+                      placeholder="https://..."
+                      maxLength={300}
+                    />
+                  </label>
+                </div>
+                <div className="creator-edit-actions">
+                  <button type="button" className="primary-button" onClick={saveProfile} disabled={isSavingProfile}>
+                    <Save size={14} aria-hidden="true" />
+                    {isSavingProfile ? "저장 중" : "저장"}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => {
+                      setEditForm(getProfileForm(profile));
+                      setProfileMessage("");
+                      setIsEditingProfile(false);
+                    }}
+                    disabled={isSavingProfile}
+                  >
+                    취소
+                  </button>
+                </div>
+                {profileMessage && <p className="creator-save-message">{profileMessage}</p>}
+              </section>
+            )}
 
             <section className="creator-section">
               <div className="section-heading">

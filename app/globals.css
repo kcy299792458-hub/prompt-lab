@@ -2690,7 +2690,35 @@ body,
   color: #111;
   font-size: 26px;
   line-height: 1.2;
+  margin: 0;
+}
+
+.creator-title-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin: 3px 0 6px;
+}
+
+.creator-edit-button {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #c7cbd0;
+  color: #222;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 5px;
+  height: 30px;
+  padding: 0 9px;
+}
+
+.creator-edit-button:hover {
+  background: #31353b;
+  border-color: #31353b;
+  color: #ffffff;
 }
 
 .creator-hero-main p {
@@ -2737,6 +2765,37 @@ body,
   padding: 4px 6px;
 }
 
+.creator-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.creator-link-row a {
+  align-items: center;
+  background: #f7f7f7;
+  border: 1px solid #dfe2e5;
+  color: #222;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 5px;
+  height: 28px;
+  padding: 0 8px;
+}
+
+.creator-link-row a:hover {
+  background: #eef0f2;
+}
+
+.creator-save-message {
+  color: #364152;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 8px 0 0;
+}
+
 .creator-stat-grid {
   display: grid;
   gap: 6px;
@@ -2772,6 +2831,63 @@ body,
   border: 1px solid #c7cbd0;
   margin-top: 10px;
   padding: 14px;
+}
+
+.creator-edit-panel {
+  background: #fbfbfb;
+}
+
+.creator-edit-grid {
+  border-top: 1px solid #c7cbd0;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 12px;
+}
+
+.creator-edit-grid label {
+  display: grid;
+  gap: 5px;
+}
+
+.creator-edit-grid label span {
+  color: #333;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.creator-edit-grid input,
+.creator-edit-grid textarea {
+  background: #ffffff;
+  border: 1px solid #c7cbd0;
+  color: #111;
+  font: inherit;
+  font-size: 13px;
+  min-height: 34px;
+  padding: 7px 9px;
+  width: 100%;
+}
+
+.creator-edit-grid textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.creator-edit-wide {
+  grid-column: 1 / -1;
+}
+
+.creator-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.creator-edit-actions button {
+  align-items: center;
+  display: inline-flex;
+  gap: 5px;
 }
 
 .creator-popular-list {
@@ -2927,6 +3043,10 @@ body,
 
   .creator-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .creator-edit-grid {
+    grid-template-columns: 1fr;
   }
 
   .creator-popular-item {
