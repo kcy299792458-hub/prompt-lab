@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import PromptDetailClient from "./PromptDetailClient";
 import { prompts } from "@/data/prompts";
 
@@ -57,6 +58,12 @@ export async function generateMetadata({
   };
 }
 
-export default function PromptDetailPage() {
+export default async function PromptDetailPage({ params }: PromptPageProps) {
+  const { id } = await params;
+
+  if (!prompts.some((item) => item.id === Number(id))) {
+    notFound();
+  }
+
   return <PromptDetailClient />;
 }
