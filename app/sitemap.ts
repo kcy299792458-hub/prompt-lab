@@ -17,7 +17,7 @@ import {
 } from "@/lib/seo-dynamic";
 
 function sitemapUrl(pathOrUrl: string) {
-  return encodeURI(pathOrUrl.startsWith("http") ? pathOrUrl : absoluteUrl(pathOrUrl));
+  return new URL(pathOrUrl.startsWith("http") ? pathOrUrl : absoluteUrl(pathOrUrl)).toString();
 }
 
 function sitemapImageUrl(pathOrUrl: string) {
