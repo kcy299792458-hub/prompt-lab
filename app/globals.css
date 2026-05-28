@@ -2715,6 +2715,28 @@ body,
   padding: 4px 6px;
 }
 
+.creator-specialty-row {
+  align-items: center;
+  color: #555;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.creator-specialty-row strong {
+  color: #111;
+  font-size: 12px;
+}
+
+.creator-specialty-row span {
+  background: #ffffff;
+  border: 1px solid #c7cbd0;
+  color: #333;
+  padding: 4px 6px;
+}
+
 .creator-stat-grid {
   display: grid;
   gap: 6px;
@@ -2750,6 +2772,75 @@ body,
   border: 1px solid #c7cbd0;
   margin-top: 10px;
   padding: 14px;
+}
+
+.creator-popular-list {
+  border-top: 1px solid #c7cbd0;
+  display: grid;
+}
+
+.creator-popular-item {
+  align-items: center;
+  border-bottom: 1px solid #e2e4e6;
+  color: #111;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 26px 68px minmax(0, 1fr) auto;
+  min-width: 0;
+  padding: 8px 0;
+}
+
+.creator-popular-item:hover {
+  background: #f7f8f5;
+}
+
+.creator-popular-rank {
+  color: #111;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.creator-popular-item img {
+  aspect-ratio: 1;
+  border: 1px solid #d6d9d0;
+  object-fit: cover;
+  width: 68px;
+}
+
+.creator-popular-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.creator-popular-copy strong {
+  font-size: 14px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.creator-popular-copy small {
+  color: #666;
+  font-size: 12px;
+}
+
+.creator-popular-stats {
+  align-items: center;
+  color: #555;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.creator-popular-stats span {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
 }
 
 .creator-featured-grid {
@@ -2809,6 +2900,19 @@ body,
 
   .creator-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .creator-popular-item {
+    grid-template-columns: 24px 56px minmax(0, 1fr);
+  }
+
+  .creator-popular-item img {
+    width: 56px;
+  }
+
+  .creator-popular-stats {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
   }
 }
 
