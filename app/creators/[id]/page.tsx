@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Bookmark, Heart, MessageCircle } from "lucide-react";
+import { ArrowLeft, Bookmark, Copy, Eye, Heart, MessageCircle } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -24,6 +24,8 @@ type ImagePostRow = {
   image_url: string;
   image_urls?: string[] | null;
   tags: string[] | null;
+  view_count?: number | null;
+  copy_count?: number | null;
   created_at: string;
 };
 
@@ -37,19 +39,27 @@ type CommentRow = {
 };
 
 type PostCounts = Record<string, { likes: number; saves: number; comments: number }>;
-type CreatorPostSort = "latest" | "popular" | "saves" | "comments" | "likes";
+type CreatorPostSort = "latest" | "popular" | "copies" | "saves" | "comments" | "likes" | "views";
 
 const creatorPostSortOptions: Array<{ label: string; value: CreatorPostSort }> = [
   { label: "최신순", value: "latest" },
   { label: "인기순", value: "popular" },
+  { label: "복사순", value: "copies" },
   { label: "저장순", value: "saves" },
   { label: "댓글순", value: "comments" },
   { label: "좋아요순", value: "likes" },
+  { label: "조회순", value: "views" },
 ];
 
-function getEngagementScore(postId: string, counts: PostCounts) {
-  const postCounts = counts[postId] ?? { likes: 0, saves: 0, comments: 0 };
-  return postCounts.saves * 3 + postCounts.likes * 2 + postCounts.comments * 2;
+function getEngagementScore(post: ImagePostRow, counts: PostCounts) {
+  const postCounts = counts[post.id] ?? { likes: 0, saves: 0, comments: 0 };
+  return (
+    (post.copy_count ?? 0) * 5 +
+    postCounts.saves * 3 +
+    postCounts.likes * 2 +
+    postCounts.comments * 2 +
+    (post.view_count ?? 0)
+  );
 }
 
 function formatDate(value: string) {
@@ -97,7 +107,7 @@ export default function CreatorProfilePage() {
         client
           .from("image_posts")
           .select(
-            "id, title, description, category, model, aspect_ratio, style, image_url, image_urls, tags, created_at",
+            "id, title, description, category, model, aspect_ratio, style, image_url, image_urls, tags, view_count, copy_count, created_at",
           )
           .eq("author_id", params.id)
           .eq("is_hidden", false)
@@ -108,7 +118,11 @@ export default function CreatorProfilePage() {
       let postRows = initialPostResult.data as ImagePostRow[] | null;
       let postError = initialPostResult.error;
 
-      if (postError?.message.includes("image_urls")) {
+      if (
+        postError?.message.includes("image_urls") ||
+        postError?.message.includes("view_count") ||
+        postError?.message.includes("copy_count")
+      ) {
         const retryResult = await client
           .from("image_posts")
           .select("id, title, description, category, model, aspect_ratio, style, image_url, tags, created_at")
@@ -191,6 +205,8 @@ export default function CreatorProfilePage() {
     let totalLikes = 0;
     let totalSaves = 0;
     let totalComments = 0;
+    let totalCopies = 0;
+    let totalViews = 0;
 
     posts.forEach((post) => {
       categoryCounts.set(post.category, (categoryCounts.get(post.category) ?? 0) + 1);
@@ -202,6 +218,8 @@ export default function CreatorProfilePage() {
       totalLikes += counts[post.id]?.likes ?? 0;
       totalSaves += counts[post.id]?.saves ?? 0;
       totalComments += counts[post.id]?.comments ?? 0;
+      totalCopies += post.copy_count ?? 0;
+      totalViews += post.view_count ?? 0;
     });
 
     const topCategory =
@@ -216,6 +234,8 @@ export default function CreatorProfilePage() {
       totalLikes,
       totalSaves,
       totalComments,
+      totalCopies,
+      totalViews,
       topCategory,
       topTags,
     };
@@ -224,10 +244,10 @@ export default function CreatorProfilePage() {
   const popularPosts = useMemo(
     () =>
       [...posts]
-        .filter((post) => getEngagementScore(post.id, counts) > 0)
+        .filter((post) => getEngagementScore(post, counts) > 0)
         .sort(
           (a, b) =>
-            getEngagementScore(b.id, counts) - getEngagementScore(a.id, counts) ||
+            getEngagementScore(b, counts) - getEngagementScore(a, counts) ||
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         )
         .slice(0, 3),
@@ -238,10 +258,12 @@ export default function CreatorProfilePage() {
     const getReactionValue = (post: ImagePostRow) => {
       const postCounts = counts[post.id] ?? { likes: 0, saves: 0, comments: 0 };
 
-      if (postSort === "popular") return getEngagementScore(post.id, counts);
+      if (postSort === "popular") return getEngagementScore(post, counts);
+      if (postSort === "copies") return post.copy_count ?? 0;
       if (postSort === "saves") return postCounts.saves;
       if (postSort === "comments") return postCounts.comments;
       if (postSort === "likes") return postCounts.likes;
+      if (postSort === "views") return post.view_count ?? 0;
       return 0;
     };
 
@@ -322,6 +344,14 @@ export default function CreatorProfilePage() {
                   <span>프롬프트</span>
                 </div>
                 <div>
+                  <strong>{stats.totalCopies}</strong>
+                  <span>복사</span>
+                </div>
+                <div>
+                  <strong>{stats.totalViews}</strong>
+                  <span>조회</span>
+                </div>
+                <div>
                   <strong>{stats.totalSaves}</strong>
                   <span>저장</span>
                 </div>
@@ -353,10 +383,13 @@ export default function CreatorProfilePage() {
                       </span>
                       <span className="creator-popular-stats">
                         <span>
+                          <Copy size={13} aria-hidden="true" /> {post.copy_count ?? 0}
+                        </span>
+                        <span>
                           <Bookmark size={13} aria-hidden="true" /> {counts[post.id]?.saves ?? 0}
                         </span>
                         <span>
-                          <Heart size={13} aria-hidden="true" /> {counts[post.id]?.likes ?? 0}
+                          <Eye size={13} aria-hidden="true" /> {post.view_count ?? 0}
                         </span>
                         <span>
                           <MessageCircle size={13} aria-hidden="true" /> {counts[post.id]?.comments ?? 0}
@@ -415,6 +448,12 @@ export default function CreatorProfilePage() {
                           </span>
                           <span>
                             <MessageCircle size={14} aria-hidden="true" /> {counts[post.id]?.comments ?? 0}
+                          </span>
+                          <span>
+                            <Copy size={14} aria-hidden="true" /> {post.copy_count ?? 0}
+                          </span>
+                          <span>
+                            <Eye size={14} aria-hidden="true" /> {post.view_count ?? 0}
                           </span>
                         </div>
                       </div>

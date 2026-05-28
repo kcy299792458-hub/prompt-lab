@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Check, Copy, UserRound } from "lucide-react";
+import { ArrowLeft, Check, Copy, Eye, UserRound } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import { ReportButton } from "@/app/components/ReportButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -20,6 +20,8 @@ type UploadedImagePostRow = {
   image_url: string;
   image_urls?: string[] | null;
   tags: string[] | null;
+  view_count?: number | null;
+  copy_count?: number | null;
   created_at: string;
   profiles?: { nickname: string } | { nickname: string }[] | null;
 };
@@ -31,9 +33,53 @@ type PromptVersionRow = {
   body: string;
 };
 
+type MetricCounts = {
+  viewCount: number;
+  copyCount: number;
+};
+
+type MetricPayload = {
+  view_count?: number | null;
+  copy_count?: number | null;
+};
+
+const visitorKeyStorageKey = "prompt-lab-visitor-key";
+
 function getProfileNickname(profile: UploadedImagePostRow["profiles"]) {
   if (Array.isArray(profile)) return profile[0]?.nickname || "회원";
   return profile?.nickname || "회원";
+}
+
+function getVisitorKey() {
+  if (typeof window === "undefined") return "server-render";
+
+  const currentKey = window.localStorage.getItem(visitorKeyStorageKey);
+  if (currentKey && currentKey.length >= 8 && currentKey.length <= 80) return currentKey;
+
+  const nextKey =
+    typeof window.crypto?.randomUUID === "function"
+      ? `pl-${window.crypto.randomUUID()}`
+      : `pl-${Date.now()}-${Math.random().toString(36).slice(2, 18)}`;
+
+  window.localStorage.setItem(visitorKeyStorageKey, nextKey);
+  return nextKey;
+}
+
+function getMetricCountsFromPost(post: UploadedImagePostRow | null): MetricCounts {
+  return {
+    viewCount: post?.view_count ?? 0,
+    copyCount: post?.copy_count ?? 0,
+  };
+}
+
+function getMetricCountsFromPayload(payload: unknown): MetricCounts | null {
+  if (!payload || typeof payload !== "object") return null;
+
+  const metricPayload = payload as MetricPayload;
+  return {
+    viewCount: Number(metricPayload.view_count ?? 0),
+    copyCount: Number(metricPayload.copy_count ?? 0),
+  };
 }
 
 export default function UploadedImageDetailPage() {
@@ -41,6 +87,7 @@ export default function UploadedImageDetailPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [post, setPost] = useState<UploadedImagePostRow | null>(null);
   const [versions, setVersions] = useState<PromptVersionRow[]>([]);
+  const [metrics, setMetrics] = useState<MetricCounts>({ viewCount: 0, copyCount: 0 });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -61,7 +108,7 @@ export default function UploadedImageDetailPage() {
       const initialPostResult = await client
         .from("image_posts")
         .select(
-          "id, author_id, title, description, category, model, aspect_ratio, style, image_url, image_urls, tags, created_at, profiles(nickname)",
+          "id, author_id, title, description, category, model, aspect_ratio, style, image_url, image_urls, tags, view_count, copy_count, created_at, profiles(nickname)",
         )
         .eq("id", params.id)
         .eq("is_hidden", false)
@@ -70,7 +117,11 @@ export default function UploadedImageDetailPage() {
       let postData = initialPostResult.data as UploadedImagePostRow | null;
       let postError = initialPostResult.error;
 
-      if (postError?.message.includes("image_urls")) {
+      if (
+        postError?.message.includes("image_urls") ||
+        postError?.message.includes("view_count") ||
+        postError?.message.includes("copy_count")
+      ) {
         const retryResult = await client
           .from("image_posts")
           .select(
@@ -97,8 +148,22 @@ export default function UploadedImageDetailPage() {
       }
 
       setPost(postData);
+      setMetrics(getMetricCountsFromPost(postData));
       setVersions((versionResult.data ?? []) as PromptVersionRow[]);
       setIsLoading(false);
+
+      if (postData) {
+        const metricResult = await client.rpc("record_image_post_metric", {
+          p_image_post_id: postData.id,
+          p_event_type: "view",
+          p_visitor_key: getVisitorKey(),
+        });
+
+        if (!isMounted || metricResult.error) return;
+
+        const nextMetrics = getMetricCountsFromPayload(metricResult.data);
+        if (nextMetrics) setMetrics(nextMetrics);
+      }
     }
 
     loadPost();
@@ -112,6 +177,19 @@ export default function UploadedImageDetailPage() {
     await navigator.clipboard.writeText(text);
     setCopiedKey(key);
     window.setTimeout(() => setCopiedKey(null), 1400);
+
+    if (!supabase || !post) return;
+
+    const metricResult = await supabase.rpc("record_image_post_metric", {
+      p_image_post_id: post.id,
+      p_event_type: "copy",
+      p_visitor_key: getVisitorKey(),
+    });
+
+    if (metricResult.error) return;
+
+    const nextMetrics = getMetricCountsFromPayload(metricResult.data);
+    if (nextMetrics) setMetrics(nextMetrics);
   };
 
   const images = post?.image_urls && post.image_urls.length > 0 ? post.image_urls : post ? [post.image_url] : [];
@@ -181,6 +259,12 @@ export default function UploadedImageDetailPage() {
                       </Link>
                     </span>
                     <span>{images.length}장</span>
+                    <span>
+                      <Eye size={14} aria-hidden="true" /> 조회 {metrics.viewCount}
+                    </span>
+                    <span>
+                      <Copy size={14} aria-hidden="true" /> 복사 {metrics.copyCount}
+                    </span>
                   </div>
                   <div className="detail-actions">
                     <ReportButton
@@ -240,6 +324,10 @@ export default function UploadedImageDetailPage() {
                 <strong>{post.model}</strong>
                 <span>이미지</span>
                 <strong>{images.length}장</strong>
+                <span>조회</span>
+                <strong>{metrics.viewCount}</strong>
+                <span>복사</span>
+                <strong>{metrics.copyCount}</strong>
                 <span>비율</span>
                 <strong>{post.aspect_ratio}</strong>
                 <span>스타일</span>

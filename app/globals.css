@@ -2740,7 +2740,7 @@ body,
 .creator-stat-grid {
   display: grid;
   gap: 6px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .creator-stat-grid div {
@@ -2910,6 +2910,7 @@ body,
 
   .creator-stat-grid {
     grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
