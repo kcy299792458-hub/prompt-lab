@@ -184,10 +184,10 @@ export function AuthControls() {
               관리자
             </Link>
           )}
-          <button className="auth-profile" type="button">
+          <Link className="auth-profile" href={`/creators/${session.user.id}`} title="내 프로필">
             <UserRound size={16} aria-hidden="true" />
             @{displayName}
-          </button>
+          </Link>
           <button className="auth-logout" type="button" onClick={logout} aria-label="로그아웃">
             <LogOut size={16} aria-hidden="true" />
           </button>
