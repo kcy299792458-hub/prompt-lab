@@ -2843,6 +2843,32 @@ body,
   gap: 4px;
 }
 
+.creator-sort-tabs {
+  border-top: 1px solid #c7cbd0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 0;
+}
+
+.creator-sort-tabs button {
+  background: #f7f7f7;
+  border: 1px solid #c7cbd0;
+  color: #333;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  height: 30px;
+  padding: 0 10px;
+}
+
+.creator-sort-tabs button.active,
+.creator-sort-tabs button:hover {
+  background: #31353b;
+  border-color: #31353b;
+  color: #ffffff;
+}
+
 .creator-featured-grid {
   display: grid;
   gap: 8px;

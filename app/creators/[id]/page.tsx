@@ -37,6 +37,15 @@ type CommentRow = {
 };
 
 type PostCounts = Record<string, { likes: number; saves: number; comments: number }>;
+type CreatorPostSort = "latest" | "popular" | "saves" | "comments" | "likes";
+
+const creatorPostSortOptions: Array<{ label: string; value: CreatorPostSort }> = [
+  { label: "최신순", value: "latest" },
+  { label: "인기순", value: "popular" },
+  { label: "저장순", value: "saves" },
+  { label: "댓글순", value: "comments" },
+  { label: "좋아요순", value: "likes" },
+];
 
 function getEngagementScore(postId: string, counts: PostCounts) {
   const postCounts = counts[postId] ?? { likes: 0, saves: 0, comments: 0 };
@@ -61,6 +70,7 @@ export default function CreatorProfilePage() {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [posts, setPosts] = useState<ImagePostRow[]>([]);
   const [counts, setCounts] = useState<PostCounts>({});
+  const [postSort, setPostSort] = useState<CreatorPostSort>("latest");
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -224,6 +234,26 @@ export default function CreatorProfilePage() {
     [counts, posts],
   );
 
+  const sortedPosts = useMemo(() => {
+    const getReactionValue = (post: ImagePostRow) => {
+      const postCounts = counts[post.id] ?? { likes: 0, saves: 0, comments: 0 };
+
+      if (postSort === "popular") return getEngagementScore(post.id, counts);
+      if (postSort === "saves") return postCounts.saves;
+      if (postSort === "comments") return postCounts.comments;
+      if (postSort === "likes") return postCounts.likes;
+      return 0;
+    };
+
+    return [...posts].sort((a, b) => {
+      const dateDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+
+      if (postSort === "latest") return dateDiff;
+
+      return getReactionValue(b) - getReactionValue(a) || dateDiff;
+    });
+  }, [counts, postSort, posts]);
+
   const avatarText = profile?.nickname.slice(0, 1).toUpperCase() || "?";
 
   return (
@@ -308,8 +338,8 @@ export default function CreatorProfilePage() {
 
             <section className="creator-section">
               <div className="section-heading">
-                <h2>인기 프롬프트</h2>
-                <span>실제 반응 기준</span>
+                <h2>인기 프롬프트 TOP 3</h2>
+                <span>상위 3개만 표시</span>
               </div>
               {popularPosts.length > 0 ? (
                 <div className="creator-popular-list">
@@ -345,9 +375,24 @@ export default function CreatorProfilePage() {
                 <h2>업로드한 프롬프트</h2>
                 <span>{posts.length}개</span>
               </div>
+              {posts.length > 1 && (
+                <div className="creator-sort-tabs" aria-label="업로드한 프롬프트 정렬">
+                  {creatorPostSortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={postSort === option.value ? "active" : ""}
+                      onClick={() => setPostSort(option.value)}
+                      aria-pressed={postSort === option.value}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               {posts.length > 0 ? (
                 <div className="gallery-grid dc-gallery-grid creator-gallery-grid">
-                  {posts.map((post) => (
+                  {sortedPosts.map((post) => (
                     <Link key={post.id} className="image-card dc-image-card" href={`/images/${post.id}`}>
                       <img src={getPostImage(post)} alt={`${post.title} 결과 이미지`} />
                       <div className="image-card-body">
