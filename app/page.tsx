@@ -179,11 +179,14 @@ export default function Home() {
     const client = supabase;
 
     async function loadCommunityPanels() {
+      const promptIds = prompts.map((prompt) => prompt.id);
+
       const [commentResult, requestResult] = await Promise.all([
         client
           .from("prompt_comments")
           .select("id, prompt_id, guest_nickname, body, created_at")
           .eq("is_hidden", false)
+          .in("prompt_id", promptIds)
           .order("created_at", { ascending: false })
           .limit(5),
         client
@@ -278,14 +281,15 @@ export default function Home() {
 
   const recentCommentItems = useMemo(
     () =>
-      recentPromptComments.map((comment) => {
+      recentPromptComments.flatMap((comment) => {
         const prompt = prompts.find((item) => item.id === Number(comment.prompt_id));
+        if (!prompt) return [];
 
         return {
           id: comment.id,
           href: `/prompts/${comment.prompt_id}`,
           title: comment.body,
-          meta: `@${comment.guest_nickname} · ${prompt ? prompt.title : `프롬프트 ${comment.prompt_id}`}`,
+          meta: `@${comment.guest_nickname} · ${prompt.title}`,
           sortKey: new Date(comment.created_at).getTime(),
         };
       }),

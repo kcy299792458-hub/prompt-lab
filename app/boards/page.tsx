@@ -156,7 +156,11 @@ export default function BoardsPage() {
       return;
     }
 
-    const commentRows = (commentResult.data ?? []) as BoardCommentActivityRow[];
+    const visiblePosts = (postData ?? []) as BoardPostRow[];
+    const visiblePostIds = new Set(visiblePosts.map((post) => post.id));
+    const commentRows = ((commentResult.data ?? []) as BoardCommentActivityRow[]).filter(
+      (comment) => comment.board_post_id && visiblePostIds.has(comment.board_post_id),
+    );
     const reactionRows = (reactionResult.data ?? []) as BoardReactionRow[];
     const counts: Record<string, number> = {};
     const recommends: Record<string, number> = {};
@@ -170,15 +174,15 @@ export default function BoardsPage() {
     if (!reactionResult.error) {
       reactionRows.forEach((reaction) => {
         const postId = reaction.board_post_id;
-        if (!postId) return;
+        if (!postId || !visiblePostIds.has(postId)) return;
         recommends[postId] = (recommends[postId] ?? 0) + 1;
       });
     }
 
     setCommentCounts(counts);
     setRecommendCounts(recommends);
-    setPosts((postData ?? []) as BoardPostRow[]);
-    setRecentComments(commentRows.filter((comment) => comment.board_post_id).slice(0, 5));
+    setPosts(visiblePosts);
+    setRecentComments(commentRows.slice(0, 5));
     setIsLoading(false);
   };
 
