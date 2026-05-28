@@ -1138,7 +1138,8 @@ img {
   gap: 6px;
 }
 
-.auth-admin-link {
+.auth-admin-link,
+.dc-topnav .auth-admin-link {
   align-items: center;
   background: #31353b;
   border-radius: 3px;
