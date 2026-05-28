@@ -2650,6 +2650,10 @@ body,
   font-weight: 700;
 }
 
+.upload-tags-input {
+  grid-column: span 3;
+}
+
 .upload-form-panel input,
 .upload-form-panel select,
 .upload-form-panel textarea {
@@ -2661,6 +2665,66 @@ body,
   outline: 0;
   padding: 9px;
   width: 100%;
+}
+
+.upload-tag-panel {
+  border: 1px solid #d8dce0;
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+}
+
+.upload-tag-head {
+  align-items: center;
+  color: #2d312b;
+  display: flex;
+  font-size: 12px;
+  justify-content: space-between;
+}
+
+.upload-tag-head span {
+  color: #777;
+}
+
+.upload-tag-chips,
+.upload-selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.upload-tag-chips button,
+.upload-selected-tags button {
+  align-items: center;
+  background: #f7f8f4;
+  border: 1px solid #cbd0c6;
+  color: #31352f;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 9px;
+}
+
+.upload-tag-chips button.active {
+  background: #20231f;
+  border-color: #20231f;
+  color: #ffffff;
+}
+
+.upload-selected-tags {
+  border-top: 1px solid #eceef0;
+  padding-top: 8px;
+}
+
+.upload-selected-tags button {
+  background: #ffffff;
+}
+
+.upload-selected-tags svg {
+  color: #777;
 }
 
 .upload-description-input {
@@ -3303,6 +3367,10 @@ body,
   }
 
   .upload-title-input {
+    grid-column: auto;
+  }
+
+  .upload-tags-input {
     grid-column: auto;
   }
 

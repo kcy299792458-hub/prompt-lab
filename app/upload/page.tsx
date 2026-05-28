@@ -18,9 +18,72 @@ type PromptVersionInsert = {
 
 const maxImageCount = 8;
 const maxImageSize = 10 * 1024 * 1024;
+const maxTagCount = 12;
+const maxTagLength = 24;
+
+const commonTagSuggestions = ["인스타트렌드", "Civitai", "Reddit", "Midjourney", "SDXL", "GPTImage"];
+
+const tagSuggestionsByCategory: Record<string, string[]> = {
+  "사진/시네마틱": ["시네마틱", "포토리얼", "필름룩", "폰카", "플래시", "거리사진", "다큐멘터리", "로우파이"],
+  "인물/패션": ["인물", "패션", "룩북", "화보", "프로필", "메이크업", "스트릿", "에디토리얼"],
+  "제품/광고": ["제품사진", "광고", "화장품", "푸드", "주얼리", "상세페이지", "스튜디오", "럭셔리"],
+  "캐릭터/웹툰": ["캐릭터", "웹툰", "애니", "게임원화", "마스코트", "일러스트", "키비주얼", "네거티브"],
+  "3D/공간": ["3D", "인테리어", "건축", "아이소메트릭", "미니어처", "렌더", "공간", "ControlNet"],
+  "편집/콜라주": ["편집", "콜라주", "Y2K", "잡지표지", "스티커", "UI", "리터칭", "합성"],
+  "기괴/호러": ["아날로그호러", "VHS", "리미널", "언캐니", "백룸", "파운드푸티지", "저화질", "폐교", "크리처", "드림코어"],
+  "배경/세계관": ["배경", "세계관", "판타지", "SF", "도시", "자연", "컨셉아트", "로케이션"],
+};
 
 function sanitizeFileExtension(fileName: string) {
   return fileName.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "jpg";
+}
+
+function getTagKey(tag: string) {
+  return tag.toLowerCase();
+}
+
+function normalizeTag(tag: string) {
+  return tag
+    .replace(/^#+/, "")
+    .replace(/[,\n\r]/g, " ")
+    .trim()
+    .replace(/\s+/g, "")
+    .slice(0, maxTagLength);
+}
+
+function parseTags(value: string) {
+  const tags: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value.split(/[,\n\r]/)) {
+    const tag = normalizeTag(item);
+    const key = getTagKey(tag);
+
+    if (!tag || seen.has(key)) continue;
+
+    seen.add(key);
+    tags.push(tag);
+
+    if (tags.length >= maxTagCount) break;
+  }
+
+  return tags;
+}
+
+function serializeTags(tags: string[]) {
+  return tags.map(normalizeTag).filter(Boolean).slice(0, maxTagCount).join(", ");
+}
+
+function getRecommendedTags(category: string) {
+  const suggestions = [...(tagSuggestionsByCategory[category] ?? []), ...commonTagSuggestions];
+  const seen = new Set<string>();
+
+  return suggestions.filter((tag) => {
+    const key = getTagKey(tag);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function makeSafeNickname(session: Session) {
@@ -53,6 +116,12 @@ export default function UploadPage() {
     negativePrompt: "",
     settingsPrompt: "",
   });
+  const selectedTags = useMemo(() => parseTags(form.tags), [form.tags]);
+  const selectedTagKeys = useMemo(
+    () => new Set(selectedTags.map((tag) => getTagKey(tag))),
+    [selectedTags],
+  );
+  const recommendedTags = useMemo(() => getRecommendedTags(form.category), [form.category]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -104,6 +173,35 @@ export default function UploadPage() {
     URL.revokeObjectURL(previews[index]);
     setImages((current) => current.filter((_, itemIndex) => itemIndex !== index));
     setPreviews((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const setTagList = (tags: string[]) => {
+    setForm((current) => ({ ...current, tags: serializeTags(tags) }));
+  };
+
+  const toggleTag = (tag: string) => {
+    const normalizedTag = normalizeTag(tag);
+    const tagKey = getTagKey(normalizedTag);
+
+    if (!normalizedTag) return;
+
+    if (selectedTagKeys.has(tagKey)) {
+      setTagList(selectedTags.filter((currentTag) => getTagKey(currentTag) !== tagKey));
+      return;
+    }
+
+    if (selectedTags.length >= maxTagCount) {
+      setMessage(`태그는 최대 ${maxTagCount}개까지 등록할 수 있습니다.`);
+      return;
+    }
+
+    setMessage("");
+    setTagList([...selectedTags, normalizedTag]);
+  };
+
+  const removeTag = (tag: string) => {
+    const tagKey = getTagKey(tag);
+    setTagList(selectedTags.filter((currentTag) => getTagKey(currentTag) !== tagKey));
   };
 
   const uploadImages = async (userId: string) => {
@@ -206,11 +304,7 @@ export default function UploadPage() {
       );
 
       const imageUrls = await uploadImages(session.user.id);
-      const tags = form.tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean)
-        .slice(0, 12);
+      const tags = parseTags(form.tags);
 
       const { data: postData, error: postError } = await supabase
         .from("image_posts")
@@ -335,9 +429,46 @@ export default function UploadPage() {
             <input
               value={form.tags}
               onChange={(event) => setForm({ ...form, tags: event.target.value })}
-              placeholder="태그 쉼표로 구분"
+              placeholder="태그 직접 입력, 쉼표로 구분"
               aria-label="태그"
+              className="upload-tags-input"
             />
+          </div>
+
+          <div className="upload-tag-panel">
+            <div className="upload-tag-head">
+              <strong>추천 태그</strong>
+              <span>
+                {selectedTags.length}/{maxTagCount}
+              </span>
+            </div>
+            <div className="upload-tag-chips" aria-label="추천 태그">
+              {recommendedTags.map((tag) => {
+                const isSelected = selectedTagKeys.has(getTagKey(tag));
+
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={isSelected ? "active" : ""}
+                    aria-pressed={isSelected}
+                    onClick={() => toggleTag(tag)}
+                  >
+                    #{tag}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedTags.length > 0 && (
+              <div className="upload-selected-tags" aria-label="선택된 태그">
+                {selectedTags.map((tag) => (
+                  <button key={tag} type="button" onClick={() => removeTag(tag)}>
+                    <span>#{tag}</span>
+                    <X size={13} aria-hidden="true" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <textarea
