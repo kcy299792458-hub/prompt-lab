@@ -312,7 +312,7 @@ export function getPromptUsageNote(prompt: Prompt) {
     return "무서운 대상을 설명하기보다 빈 공간, 시선, 반사, 카메라 결함을 남기는 쪽이 잘 맞습니다. 피사체를 과하게 선명하게 만들지 마세요.";
   }
 
-  if (promptMatches(prompt, ["폰카", "디카", "캠코더", "minidv", "필름룩", "disposable", "폴라로이드", "스냅", "셀피"])) {
+  if (promptMatches(prompt, ["폰카", "디카", "캠코더", "minidv", "필름룩", "disposable", "폴라로이드", "스냅", "셀피", "로파이", "노을"])) {
     return `${focus} 질감이 핵심입니다. 완벽한 화질보다 플래시, 노출 실패, 저해상도, 업로드된 사진 같은 촬영 조건을 앞쪽에 두세요.`;
   }
 
@@ -332,7 +332,7 @@ export function getPromptUsageNote(prompt: Prompt) {
     return "스케일감이 핵심입니다. 카메라 각도, 재질, 조명 위치를 먼저 고정하고 공간 요소만 바꾸면 같은 톤으로 변형하기 쉽습니다.";
   }
 
-  if (promptMatches(prompt, ["콜라주", "매거진", "프롬프트카드", "캐러셀", "스크랩북", "저널", "포스터", "게임ui"])) {
+  if (promptMatches(prompt, ["콜라주", "매거진", "프롬프트카드", "캐러셀", "스크랩북", "저널", "포스터", "게임ui", "앨범커버", "포토덤프", "밀스톤", "타투", "플래시시트"])) {
     return "레이아웃형 프롬프트라 글자가 깨질 수 있습니다. 읽히는 문구는 최소화하고 프레임, 종이 질감, 스티커 배치를 먼저 설계하세요.";
   }
 
