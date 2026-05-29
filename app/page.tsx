@@ -96,6 +96,33 @@ function normalizeContentKey(value: string) {
   return value.trim().toLowerCase();
 }
 
+const promptRankByTitle = new Map(
+  prompts.map((prompt) => [normalizeContentKey(prompt.title), prompt.id]),
+);
+
+function getGallerySortParts(item: GalleryItem) {
+  const promptRank = promptRankByTitle.get(normalizeContentKey(item.title));
+
+  if (promptRank) {
+    return { group: 1, value: promptRank };
+  }
+
+  return {
+    group: item.kind === "uploaded" ? 2 : 1,
+    value: item.sortKey,
+  };
+}
+
+function compareGalleryItems(a: GalleryItem, b: GalleryItem) {
+  const aSort = getGallerySortParts(a);
+  const bSort = getGallerySortParts(b);
+
+  if (aSort.group !== bSort.group) return bSort.group - aSort.group;
+  if (aSort.value !== bSort.value) return bSort.value - aSort.value;
+
+  return b.id.localeCompare(a.id);
+}
+
 function promptToGalleryItem(prompt: Prompt): GalleryItem {
   return {
     kind: "seed",
@@ -504,7 +531,7 @@ export default function Home() {
       return matchesCategory && searchableText.includes(normalizedQuery);
     });
 
-    return [...filtered].sort((a, b) => b.sortKey - a.sortKey);
+    return [...filtered].sort(compareGalleryItems);
   }, [category, galleryItems, query]);
   const seoTags = useMemo(() => getAllTags().slice(0, 18), []);
 
