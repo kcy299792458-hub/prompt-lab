@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, EyeOff, RefreshCw, Search, ShieldCheck, XCircle } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
+import type { PromptDraftRow } from "@/lib/prompt-drafts";
 import {
   createSupabaseBrowserClient,
   isSupabaseConfigured,
 } from "@/lib/supabase/client";
 
-type AdminFilter = "all" | "report" | "image" | "board" | "comment" | "request";
+type AdminFilter = "all" | "draft" | "report" | "image" | "board" | "comment" | "request";
 type ModerationTable =
   | "image_posts"
   | "board_posts"
@@ -35,6 +36,7 @@ type ModerationItem = {
   targetId?: string;
   targetTable?: ModerationTable;
   targetType?: string;
+  draft?: PromptDraftRow;
 };
 
 type ContentReportRow = {
@@ -120,6 +122,7 @@ export default function AdminPage() {
       promptCommentResult,
       requestResult,
       answerResult,
+      draftResult,
       reportResult,
     ] = await Promise.all([
       supabase
@@ -162,6 +165,14 @@ export default function AdminPage() {
         .eq("is_hidden", false)
         .order("created_at", { ascending: false })
         .limit(30),
+      supabase
+        .from("prompt_drafts")
+        .select(
+          "id, title, description, prompt_body, category, model, aspect_ratio, style, image_url, image_urls, tags, source_urls, source_notes, status, quality_score, risk_notes, agent_name, published_image_post_id, scheduled_for, created_at, updated_at",
+        )
+        .neq("status", "published")
+        .order("created_at", { ascending: false })
+        .limit(40),
       supabase
         .from("content_reports")
         .select(
@@ -271,6 +282,22 @@ export default function AdminPage() {
       });
     }
 
+    if (!draftResult.error) {
+      ((draftResult.data ?? []) as PromptDraftRow[]).forEach((draft) => {
+        nextItems.push({
+          id: draft.id,
+          type: "draft",
+          label: draft.status === "pending" ? "초안" : `초안/${draft.status}`,
+          title: draft.title,
+          body: draft.description || draft.prompt_body,
+          author: draft.agent_name || "hermes",
+          href: "/admin",
+          createdAt: draft.created_at,
+          draft,
+        });
+      });
+    }
+
     if (!reportResult.error) {
       ((reportResult.data ?? []) as ContentReportRow[]).forEach((report) => {
         const targetLabel = reportTargetLabels[report.target_type] || "대상";
@@ -301,11 +328,12 @@ export default function AdminPage() {
       promptCommentResult.error,
       requestResult.error,
       answerResult.error,
+      draftResult.error,
       reportResult.error,
     ].filter(Boolean);
 
     if (errors.length > 0) {
-      setMessage("일부 항목을 불러오지 못했습니다. 009 또는 010 SQL 실행 여부를 확인하세요.");
+      setMessage("일부 항목을 불러오지 못했습니다. 최신 SQL 마이그레이션 실행 여부를 확인하세요.");
     }
 
     setItems(
@@ -474,8 +502,116 @@ export default function AdminPage() {
     setMessage(`신고를 ${reportStatusLabels[nextStatus]} 상태로 바꿨습니다.`);
   };
 
+  const publishDraft = async (item: ModerationItem) => {
+    if (!supabase || !item.draft) return;
+
+    const draft = item.draft;
+    const imageUrls = (draft.image_urls?.length ? draft.image_urls : [draft.image_url]).filter(Boolean);
+
+    if (imageUrls.length === 0) {
+      setMessage("발행하려면 초안에 결과 이미지 URL이 필요합니다.");
+      return;
+    }
+
+    setBusyId(draft.id);
+    setMessage("");
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user.id;
+
+    if (!userId) {
+      setBusyId("");
+      setMessage("발행하려면 관리자 계정으로 로그인해야 합니다.");
+      return;
+    }
+
+    const { data: postData, error: postError } = await supabase
+      .from("image_posts")
+      .insert({
+        author_id: userId,
+        title: draft.title,
+        description: draft.description,
+        category: draft.category,
+        model: draft.model,
+        aspect_ratio: draft.aspect_ratio,
+        style: draft.style,
+        image_url: imageUrls[0],
+        image_urls: imageUrls,
+        tags: draft.tags || [],
+      })
+      .select("id")
+      .single();
+
+    if (postError || !postData) {
+      setBusyId("");
+      setMessage(postError?.message || "이미지 게시글을 발행할 수 없습니다.");
+      return;
+    }
+
+    const { error: versionError } = await supabase.from("prompt_versions").insert({
+      image_post_id: postData.id as string,
+      label: "Hermes 생성 프롬프트",
+      language: "mixed",
+      body: draft.prompt_body,
+    });
+
+    if (versionError) {
+      setBusyId("");
+      setMessage(versionError.message);
+      return;
+    }
+
+    const { error: draftError } = await supabase
+      .from("prompt_drafts")
+      .update({
+        status: "published",
+        published_image_post_id: postData.id,
+        published_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", draft.id);
+
+    setBusyId("");
+
+    if (draftError) {
+      setMessage(draftError.message);
+      return;
+    }
+
+    setItems((current) => current.filter((entry) => entry.id !== draft.id));
+    setMessage("초안을 이미지 게시글로 발행했습니다.");
+  };
+
+  const rejectDraft = async (item: ModerationItem) => {
+    if (!supabase || !item.draft) return;
+
+    const draft = item.draft;
+    setBusyId(draft.id);
+    setMessage("");
+
+    const { error } = await supabase
+      .from("prompt_drafts")
+      .update({
+        status: "rejected",
+        rejected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", draft.id);
+
+    setBusyId("");
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setItems((current) => current.filter((entry) => entry.id !== draft.id));
+    setMessage("초안을 기각했습니다.");
+  };
+
   const tabs: Array<{ label: string; value: AdminFilter }> = [
     { label: "전체", value: "all" },
+    { label: "초안", value: "draft" },
     { label: "신고", value: "report" },
     { label: "이미지", value: "image" },
     { label: "게시글", value: "board" },
@@ -577,13 +713,63 @@ export default function AdminPage() {
                 <article key={`${item.type}-${item.id}`} className="admin-row">
                   <span className="board-label">{item.label}</span>
                   <div className="admin-row-body">
-                    <Link href={item.href}>{item.title}</Link>
+                    {item.draft ? (
+                      <strong className="admin-draft-title">{item.title}</strong>
+                    ) : (
+                      <Link href={item.href}>{item.title}</Link>
+                    )}
                     <p>{item.body}</p>
+                    {item.draft && (
+                      <div className="admin-draft-detail">
+                        {item.draft.image_url && (
+                          <img src={item.draft.image_url} alt="" loading="lazy" />
+                        )}
+                        <div>
+                          <small>
+                            {item.draft.category} · {item.draft.model} · {item.draft.aspect_ratio}
+                            {typeof item.draft.quality_score === "number"
+                              ? ` · 점수 ${item.draft.quality_score}`
+                              : ""}
+                          </small>
+                          <p>{item.draft.prompt_body}</p>
+                          {item.draft.source_urls.length > 0 && (
+                            <div className="admin-draft-sources">
+                              {item.draft.source_urls.slice(0, 3).map((url) => (
+                                <a key={url} href={url} target="_blank" rel="noreferrer">
+                                  참고자료
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <small>@{item.author}</small>
                   <small>{formatDate(item.createdAt)}</small>
                   <div className="admin-row-actions">
-                    {item.reportId ? (
+                    {item.draft ? (
+                      <>
+                        <button
+                          className="admin-publish-button"
+                          type="button"
+                          onClick={() => publishDraft(item)}
+                          disabled={busyId === item.draft?.id}
+                        >
+                          <CheckCircle2 size={13} aria-hidden="true" />
+                          발행
+                        </button>
+                        <button
+                          className="admin-reject-button"
+                          type="button"
+                          onClick={() => rejectDraft(item)}
+                          disabled={busyId === item.draft?.id}
+                        >
+                          <XCircle size={13} aria-hidden="true" />
+                          기각
+                        </button>
+                      </>
+                    ) : item.reportId ? (
                       <>
                         {item.targetTable && (
                           <button
