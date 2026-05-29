@@ -331,21 +331,37 @@ export default function BoardPostPage() {
     router.push("/boards");
   };
 
-  const deleteGuestComment = async (commentId: string) => {
+  const deleteComment = async (comment: CommentRow) => {
     if (!supabase) return;
 
-    const { error } = await supabase.rpc("delete_guest_board_comment", {
-      p_comment_id: commentId,
-      p_password: commentPasswords[commentId] ?? "",
-    });
+    if (sessionUser && comment.author_id === sessionUser.id) {
+      const { error } = await supabase
+        .from("comments")
+        .update({ is_hidden: true, updated_at: new Date().toISOString() })
+        .eq("id", comment.id)
+        .eq("author_id", sessionUser.id);
 
-    if (error) {
-      setMessage(error.message);
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+    } else if (!comment.author_id) {
+      const { error } = await supabase.rpc("delete_guest_board_comment", {
+        p_comment_id: comment.id,
+        p_password: commentPasswords[comment.id] ?? "",
+      });
+
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+    } else {
+      setMessage("본인이 작성한 댓글만 삭제할 수 있습니다.");
       return;
     }
 
     setMessage("댓글을 삭제했습니다.");
-    setCommentPasswords({ ...commentPasswords, [commentId]: "" });
+    setCommentPasswords({ ...commentPasswords, [comment.id]: "" });
     await loadPost(visitorKey);
   };
 
@@ -605,21 +621,23 @@ export default function BoardPostPage() {
                     />
                   </div>
                   <p>{comment.body}</p>
-                  {!comment.author_id && (
+                  {(!comment.author_id || comment.author_id === sessionUser?.id) && (
                     <div className="dc-comment-tools">
-                      <input
-                        value={commentPasswords[comment.id] ?? ""}
-                        onChange={(event) =>
-                          setCommentPasswords({
-                            ...commentPasswords,
-                            [comment.id]: event.target.value,
-                          })
-                        }
-                        placeholder="삭제 비밀번호"
-                        type="password"
-                        aria-label="댓글 삭제 비밀번호"
-                      />
-                      <button type="button" onClick={() => deleteGuestComment(comment.id)}>
+                      {!comment.author_id && (
+                        <input
+                          value={commentPasswords[comment.id] ?? ""}
+                          onChange={(event) =>
+                            setCommentPasswords({
+                              ...commentPasswords,
+                              [comment.id]: event.target.value,
+                            })
+                          }
+                          placeholder="삭제 비밀번호"
+                          type="password"
+                          aria-label="댓글 삭제 비밀번호"
+                        />
+                      )}
+                      <button type="button" onClick={() => deleteComment(comment)}>
                         <Trash2 size={13} aria-hidden="true" />
                         삭제
                       </button>
