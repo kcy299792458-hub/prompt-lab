@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SeoJsonLd } from "@/app/components/SeoLanding";
 import { SiteFooter } from "@/app/components/SiteFooter";
-import { SITE_URL } from "@/lib/seo";
+import { getSiteJsonLd, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "프롬프트랩 - GPT Image AI 이미지 프롬프트 갤러리",
+    default: "프롬프트랩 - 무료 AI 이미지 프롬프트 갤러리",
     template: "%s | 프롬프트랩",
   },
   description:
-    "GPT Image, Midjourney, Stable Diffusion용 AI 이미지 프롬프트 예시와 실제 결과 이미지를 함께 확인하는 프롬프트 갤러리.",
+    "GPT Image, Midjourney, Stable Diffusion용 AI 이미지 프롬프트 예시와 실제 결과 이미지를 함께 확인하는 무료 프롬프트 갤러리.",
   keywords: [
     "이미지 프롬프트",
     "AI 이미지",
@@ -49,7 +50,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "프롬프트랩",
-    description: "GPT Image, Midjourney, Stable Diffusion용 AI 이미지 프롬프트 예시와 결과 이미지를 함께 확인하는 갤러리.",
+    description: "GPT Image, Midjourney, Stable Diffusion용 AI 이미지 프롬프트 예시와 결과 이미지를 함께 확인하는 무료 갤러리.",
     images: ["/og-image-v2.png"],
   },
 };
@@ -62,6 +63,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
+        <SeoJsonLd data={getSiteJsonLd()} />
         {children}
         <SiteFooter />
       </body>

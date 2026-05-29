@@ -4,12 +4,13 @@ import {
   SITE_URL,
   absoluteUrl,
   categoryLandingPages,
-  getAllTags,
+  getIndexableTags,
   getPromptPath,
   getTagPath,
   modelLandingPages,
 } from "@/lib/seo";
 import {
+  getPostImages,
   fetchSitemapCreators,
   fetchSitemapImagePosts,
   fetchSitemapResolvedRequests,
@@ -21,7 +22,13 @@ function sitemapUrl(pathOrUrl: string) {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  const tags = getAllTags();
+  const tags = getIndexableTags();
+  const indexableCategories = categoryLandingPages.filter((page) =>
+    prompts.some((prompt) => prompt.category === page.category),
+  );
+  const indexableModels = modelLandingPages.filter((page) =>
+    prompts.some((prompt) => page.matches(prompt.model)),
+  );
   const [uploadedPosts, creators, resolvedRequests] = await Promise.all([
     fetchSitemapImagePosts(),
     fetchSitemapCreators(),
@@ -53,13 +60,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.35,
     },
-    ...categoryLandingPages.map((page) => ({
+    ...indexableCategories.map((page) => ({
       url: sitemapUrl(`${SITE_URL}/categories/${page.slug}`),
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.85,
     })),
-    ...modelLandingPages.map((page) => ({
+    ...indexableModels.map((page) => ({
       url: sitemapUrl(`${SITE_URL}/models/${page.slug}`),
       lastModified: now,
       changeFrequency: "weekly" as const,
@@ -76,12 +83,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.75,
+      images: [sitemapUrl(prompt.image)],
     })),
     ...uploadedPosts.map((post) => ({
       url: sitemapUrl(`${SITE_URL}/images/${post.id}`),
       lastModified: new Date(post.updated_at || post.created_at),
       changeFrequency: "weekly" as const,
       priority: 0.72,
+      images: getPostImages(post).map(sitemapUrl),
     })),
     ...creators.map((creator) => ({
       url: sitemapUrl(`${SITE_URL}/creators/${creator.id}`),

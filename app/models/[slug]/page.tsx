@@ -35,6 +35,7 @@ export async function generateMetadata({ params }: ModelPageProps): Promise<Meta
   }
 
   const path = `/models/${page.slug}`;
+  const hasPrompts = prompts.some((prompt) => page.matches(prompt.model));
 
   return {
     title: page.title,
@@ -43,6 +44,16 @@ export async function generateMetadata({ params }: ModelPageProps): Promise<Meta
     alternates: {
       canonical: path,
     },
+    robots: hasPrompts
+      ? { index: true, follow: true }
+      : {
+          index: false,
+          follow: true,
+          googleBot: {
+            index: false,
+            follow: true,
+          },
+        },
     openGraph: {
       title: page.title,
       description: page.description,

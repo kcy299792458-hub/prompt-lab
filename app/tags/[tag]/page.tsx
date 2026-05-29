@@ -10,6 +10,7 @@ import {
   getCollectionJsonLd,
   getPromptsByTag,
   getTagPath,
+  isIndexableTag,
 } from "@/lib/seo";
 
 type TagPageProps = {
@@ -46,6 +47,7 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
   const path = getTagPath(tag);
   const title = `#${tag} AI 이미지 프롬프트 모음`;
   const description = `#${tag} 태그가 붙은 AI 이미지 프롬프트와 결과 예시를 모았습니다. GPT Image, Midjourney, Stable Diffusion 프롬프트를 함께 확인하세요.`;
+  const shouldIndex = isIndexableTag(tag);
 
   return {
     title,
@@ -54,6 +56,16 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
     alternates: {
       canonical: path,
     },
+    robots: shouldIndex
+      ? { index: true, follow: true }
+      : {
+          index: false,
+          follow: true,
+          googleBot: {
+            index: false,
+            follow: true,
+          },
+        },
     openGraph: {
       title,
       description,

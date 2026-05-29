@@ -35,6 +35,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   }
 
   const path = `/categories/${page.slug}`;
+  const hasPrompts = prompts.some((prompt) => prompt.category === page.category);
 
   return {
     title: page.title,
@@ -43,6 +44,16 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     alternates: {
       canonical: path,
     },
+    robots: hasPrompts
+      ? { index: true, follow: true }
+      : {
+          index: false,
+          follow: true,
+          googleBot: {
+            index: false,
+            follow: true,
+          },
+        },
     openGraph: {
       title: page.title,
       description: page.description,

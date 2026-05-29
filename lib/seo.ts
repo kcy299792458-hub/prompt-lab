@@ -3,6 +3,7 @@ import { prompts, type Prompt } from "@/data/prompts";
 export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL || "https://prompt-lab-drab-xi.vercel.app"
 ).replace(/\/$/, "");
+export const MIN_INDEXABLE_TAG_PROMPTS = 3;
 
 export type CategoryLandingPage = {
   category: string;
@@ -232,6 +233,18 @@ export function getPromptsByTag(tag: string) {
   return prompts.filter((prompt) => prompt.tags.some((item) => item.toLowerCase() === tag.toLowerCase()));
 }
 
+export function getTagPromptCount(tag: string) {
+  return getPromptsByTag(tag).length;
+}
+
+export function isIndexableTag(tag: string) {
+  return getTagPromptCount(tag) >= MIN_INDEXABLE_TAG_PROMPTS;
+}
+
+export function getIndexableTags() {
+  return getAllTags().filter(isIndexableTag);
+}
+
 export function getPromptSeoTitle(prompt: Prompt) {
   const modelConfig = getModelConfigForPrompt(prompt);
   const modelLabel = modelConfig?.label || prompt.model;
@@ -275,8 +288,11 @@ export function getPromptJsonLd(prompt: Prompt) {
     "@type": "Article",
     headline: getPromptSeoTitle(prompt),
     description: getPromptSeoDescription(prompt),
+    url: pageUrl,
     image: [imageUrl],
     mainEntityOfPage: pageUrl,
+    inLanguage: prompt.language === "영어" ? "en" : "ko-KR",
+    isAccessibleForFree: true,
     author: {
       "@type": "Person",
       name: prompt.authorName || "운영자",
@@ -333,5 +349,39 @@ export function getCollectionJsonLd({
         name: prompt.title,
       })),
     },
+  };
+}
+
+export function getSiteJsonLd() {
+  const organizationId = `${SITE_URL}/#organization`;
+  const websiteId = `${SITE_URL}/#website`;
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": organizationId,
+        name: "프롬프트랩",
+        url: SITE_URL,
+        logo: {
+          "@type": "ImageObject",
+          url: absoluteUrl("/logo.png"),
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": websiteId,
+        name: "프롬프트랩",
+        alternateName: "Prompt Lab",
+        url: SITE_URL,
+        description:
+          "GPT Image, Midjourney, Stable Diffusion용 AI 이미지 프롬프트 예시와 결과 이미지를 함께 확인하는 프롬프트 갤러리.",
+        inLanguage: "ko-KR",
+        publisher: {
+          "@id": organizationId,
+        },
+      },
+    ],
   };
 }
