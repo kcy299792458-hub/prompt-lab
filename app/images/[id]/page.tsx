@@ -493,7 +493,9 @@ export default function UploadedImageDetailPage() {
                 <div className="section-heading">
                   <h2>프롬프트 사용 노트</h2>
                 </div>
-                <p>{post.description || "사용 노트가 없습니다."}</p>
+                <article className="prompt-guide-note">
+                  <p>{post.description || "사용 노트가 없습니다."}</p>
+                </article>
               </section>
             </div>
 

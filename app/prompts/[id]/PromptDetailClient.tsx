@@ -445,11 +445,9 @@ export default function PromptDetailPage() {
             <div className="section-heading">
               <h2>프롬프트 사용 노트</h2>
             </div>
-            {promptUseNote && (
-              <article className="prompt-guide-note">
-                <p>{promptUseNote}</p>
-              </article>
-            )}
+            <article className="prompt-guide-note">
+              <p>{promptUseNote || "사용 노트가 없습니다."}</p>
+            </article>
             <div className="prompt-guide-links">
               <Link className="prompt-guide-link" href={getCategoryPath(prompt.category)}>
                 {prompt.category} 프롬프트 더 보기
