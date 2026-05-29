@@ -1016,28 +1016,65 @@ Negative: (sharp, masterpiece, best quality, 8k, hdr:1.5), child's face visible,
   },
   {
     id: 68,
-    title: "프롬프트 크리에이터 액션 피규어",
-    description: "인스타와 틱톡에서 유행한 AI 액션 피규어/박스돌 포맷을 프롬프트 크리에이터 캐릭터로 변형.",
-    body: `Create a vertical 4:5 premium AI action-figure package image from this exact detailed prompt: A collectible action figure of an original AI prompt creator character displayed inside a clear blister package, photographed like a high-end product shot for an Instagram prompt trend. The character is a stylish anonymous young adult wearing a black hoodie, loose cargo pants, sneakers, and a small camera bag, posed with one hand holding a tiny prompt notebook and the other holding a miniature camera. Inside the package, arrange accessories neatly: a laptop, headphones, tiny coffee cup, sticker sheets, and a small blank image card. The backing card design should be colorful and graphic with abstract shapes, but all typography must be unreadable decorative marks, no real brand names. Use realistic plastic reflections, die-cut cardboard texture, studio softbox lighting, clean shadow, and square-on composition like a toy catalog image. The mood should match the viral AI action figure / doll box format while staying original. Avoid real brands, readable text, logos, celebrity likeness, copyrighted toy design, distorted anatomy, extra limbs, warped blister plastic, watermark, and messy packaging layout.`,
+    title: "GPT Image 액션 피규어 패키지 프롬프트",
+    description: "투명 블리스터 팩, 카드백, 소품 칸, 이름표까지 갖춘 인스타/틱톡용 AI 액션 피규어 패키지 프롬프트.",
+    body: `Create a vertical 4:5 premium product photograph for GPT Image using this exact detailed prompt:
+
+Turn the uploaded reference person, original character, or described persona into a high-end collectible action figure sealed inside realistic retail blister packaging. If no reference photo is provided, create an anonymous stylish AI prompt creator character instead: black oversized hoodie, loose black cargo pants, black-and-white sneakers, small crossbody camera bag, soft layered black hair, calm downward gaze, one hand holding a miniature camera and the other holding a tiny prompt notebook.
+
+Packaging structure: a clear molded PET plastic blister with believable rounded edges, subtle thickness, tiny seams, soft dents, and realistic specular highlights; a thick matte cardboard backing card with a die-cut hang tab at the top; separate molded accessory compartments on the right side; a larger figure compartment on the left; a small bottom nameplate area with either the simple label "PROMPT MAKER" or abstract unreadable display marks if text rendering is unstable. The packaging should feel like a real premium collectible sold in a design-store toy aisle, not a flat poster.
+
+Figure design: the figure should look like a physical 1/12 scale articulated collectible, with subtle joint lines at shoulders, elbows, wrists, knees, and ankles, but still elegant and not mechanical. Use realistic vinyl/plastic skin material, matte fabric-like sculpting on the hoodie, layered folds in the cargo pants, tiny zipper pulls, shoe stitching, bag buckles, and small painted details. The pose should be relaxed and slightly asymmetrical, with believable toy balance inside the blister tray.
+
+Accessories: arrange each accessory in its own clear compartment with clean spacing: a miniature laptop showing an abstract prompt interface with no readable words, over-ear headphones, a tiny takeaway coffee cup with no logo, a small blank image card, a sheet of abstract stickers, a compact camera lens, a black notebook, and a pen. The accessories must look like miniature plastic objects, not full-size objects pasted into the scene.
+
+Graphic design: use an original packaging card design with cream paper texture, black brush-like marks, muted violet blocks, small lime-yellow accent shapes, tiny abstract UI symbols, and decorative microtext that is intentionally unreadable. Do not use any real brand name, toy franchise layout, social media logo, barcode numbers, QR code, or copyrighted character reference. The overall look should be trendy enough for an Instagram AI prompt post but clean enough for a product catalog.
+
+Lighting and camera: shoot it as a realistic studio product photo, straight-on with a slight 70mm lens compression, softbox reflection across the curved plastic, controlled shadow beneath the package, gentle gray background, crisp focus on the figure and accessories, subtle depth from the blister plastic, realistic cardboard fibers, dust-free but tactile materials, and high dynamic range without looking CGI.
+
+Quality controls: keep the full package visible in frame, preserve the rectangular card silhouette, avoid cutting off the hang tab or bottom edge, keep hands and accessories anatomically clean, keep all text either exactly requested or unreadable, and make the image feel like a real photographed object.
+
+Negative instructions: no Barbie, no Funko, no Marvel, no DC, no anime franchise, no celebrity likeness, no readable brand logos, no watermark, no messy random letters, no deformed hands, no extra fingers, no duplicate heads, no melted plastic, no floating accessories, no warped packaging, no flat 2D illustration, no low-resolution screenshot, no over-saturated toy colors.`,
     promptVersions: [
       {
-        label: "실제 생성 프롬프트",
+        label: "복사용 GPT Image 템플릿",
         language: "영어",
-        body: `Create a vertical 4:5 premium AI action-figure package image from this exact detailed prompt: A collectible action figure of an original AI prompt creator character displayed inside a clear blister package, photographed like a high-end product shot for an Instagram prompt trend. The character is a stylish anonymous young adult wearing a black hoodie, loose cargo pants, sneakers, and a small camera bag, posed with one hand holding a tiny prompt notebook and the other holding a miniature camera. Inside the package, arrange accessories neatly: a laptop, headphones, tiny coffee cup, sticker sheets, and a small blank image card. The backing card design should be colorful and graphic with abstract shapes, but all typography must be unreadable decorative marks, no real brand names. Use realistic plastic reflections, die-cut cardboard texture, studio softbox lighting, clean shadow, and square-on composition like a toy catalog image. The mood should match the viral AI action figure / doll box format while staying original. Avoid real brands, readable text, logos, celebrity likeness, copyrighted toy design, distorted anatomy, extra limbs, warped blister plastic, watermark, and messy packaging layout.`,
+        body: `Create a vertical 4:5 premium product photograph for GPT Image using this exact detailed prompt:
+
+Turn the uploaded reference person, original character, or described persona into a high-end collectible action figure sealed inside realistic retail blister packaging. If no reference photo is provided, create an anonymous stylish AI prompt creator character instead: black oversized hoodie, loose black cargo pants, black-and-white sneakers, small crossbody camera bag, soft layered black hair, calm downward gaze, one hand holding a miniature camera and the other holding a tiny prompt notebook.
+
+Packaging structure: a clear molded PET plastic blister with believable rounded edges, subtle thickness, tiny seams, soft dents, and realistic specular highlights; a thick matte cardboard backing card with a die-cut hang tab at the top; separate molded accessory compartments on the right side; a larger figure compartment on the left; a small bottom nameplate area with either the simple label "PROMPT MAKER" or abstract unreadable display marks if text rendering is unstable. The packaging should feel like a real premium collectible sold in a design-store toy aisle, not a flat poster.
+
+Figure design: the figure should look like a physical 1/12 scale articulated collectible, with subtle joint lines at shoulders, elbows, wrists, knees, and ankles, but still elegant and not mechanical. Use realistic vinyl/plastic skin material, matte fabric-like sculpting on the hoodie, layered folds in the cargo pants, tiny zipper pulls, shoe stitching, bag buckles, and small painted details. The pose should be relaxed and slightly asymmetrical, with believable toy balance inside the blister tray.
+
+Accessories: arrange each accessory in its own clear compartment with clean spacing: a miniature laptop showing an abstract prompt interface with no readable words, over-ear headphones, a tiny takeaway coffee cup with no logo, a small blank image card, a sheet of abstract stickers, a compact camera lens, a black notebook, and a pen. The accessories must look like miniature plastic objects, not full-size objects pasted into the scene.
+
+Graphic design: use an original packaging card design with cream paper texture, black brush-like marks, muted violet blocks, small lime-yellow accent shapes, tiny abstract UI symbols, and decorative microtext that is intentionally unreadable. Do not use any real brand name, toy franchise layout, social media logo, barcode numbers, QR code, or copyrighted character reference. The overall look should be trendy enough for an Instagram AI prompt post but clean enough for a product catalog.
+
+Lighting and camera: shoot it as a realistic studio product photo, straight-on with a slight 70mm lens compression, softbox reflection across the curved plastic, controlled shadow beneath the package, gentle gray background, crisp focus on the figure and accessories, subtle depth from the blister plastic, realistic cardboard fibers, dust-free but tactile materials, and high dynamic range without looking CGI.
+
+Quality controls: keep the full package visible in frame, preserve the rectangular card silhouette, avoid cutting off the hang tab or bottom edge, keep hands and accessories anatomically clean, keep all text either exactly requested or unreadable, and make the image feel like a real photographed object.
+
+Negative instructions: no Barbie, no Funko, no Marvel, no DC, no anime franchise, no celebrity likeness, no readable brand logos, no watermark, no messy random letters, no deformed hands, no extra fingers, no duplicate heads, no melted plastic, no floating accessories, no warped packaging, no flat 2D illustration, no low-resolution screenshot, no over-saturated toy colors.`,
+      },
+      {
+        label: "한국어 사용 가이드",
+        language: "한영 혼합",
+        body: "인물 사진을 첨부할 때는 첫 문장의 uploaded reference person을 그대로 두고, 원하는 직업이나 콘셉트만 accessories와 outfit 부분에 추가하세요. 예: 개발자라면 기계식 키보드, 노트북, 커피, 회로 패턴 카드백을 넣고, 디자이너라면 색상칩, 스타일러스, 스케치북, 목업 보드를 넣으면 됩니다. 브랜드명과 실제 장난감 라인 이름은 빼는 편이 안전합니다.",
       },
       {
         label: "조사 참고",
         language: "한영 혼합",
-        body: "ChatGPT action figure / box doll 트렌드는 Instagram, TikTok, Threads 등에서 확산된 AI 이미지 포맷으로 소개됩니다. 참고: https://www.globaltechcouncil.org/ai/chatgpt-action-figure-trend/ / https://www.followchain.org/action-figure-chatgpt-prompt/",
+        body: "ChatGPT action figure / box doll 트렌드는 업로드한 사진을 장난감 박스, 블리스터 패키지, 소품 칸, 이름표가 있는 수집형 피규어 이미지로 바꾸는 포맷으로 소개됩니다. 원문 프롬프트를 복사하지 않고 구조만 참고해 프롬프트랩용으로 새로 작성했습니다. 참고: https://www.globaltechcouncil.org/ai/chatgpt-action-figure-trend/ / https://www.kalon.ai/templates/ai-action-figure-prompts / https://www.eonline.com/news/1416043/chatgpt-action-figure-trend-how-to-make-ai-barbie-doll",
       },
     ],
     category: "제품/광고",
     model: "GPT Image",
     aspectRatio: "4:5",
-    style: "AI Action Figure Package",
+    style: "GPT Image Action Figure Package",
     language: "영어",
     image: "/samples/instagram-action-figure-package.png",
-    tags: ["인스타트렌드", "액션피규어", "패키지", "ChatGPT"],
+    tags: ["GPT Image", "액션피규어", "피규어패키지", "블리스터팩", "인스타트렌드"],
   },
   {
     id: 69,
