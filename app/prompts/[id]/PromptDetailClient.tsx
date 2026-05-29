@@ -77,7 +77,7 @@ export default function PromptDetailPage() {
   const seoTips = prompt ? getPromptSeoTips(prompt) : null;
   const promptUseNote = seoTips
     ? [seoTips.core, seoTips.model, seoTips.variation, seoTips.failure].join(" ")
-    : "";
+    : prompt?.description ?? "";
 
   const loadInteractions = async (currentVisitorKey = visitorKey) => {
     if (!supabase || !prompt) return;
@@ -339,10 +339,8 @@ export default function PromptDetailPage() {
           <section className="prompt-detail-section uploaded-description-section">
             <div className="section-heading">
               <h2>프롬프트 사용 노트</h2>
-              <span>작성자 메모/응용 팁</span>
             </div>
-            <p>{prompt.description}</p>
-            {seoTips && (
+            {promptUseNote && (
               <article className="prompt-guide-note">
                 <p>{promptUseNote}</p>
               </article>
