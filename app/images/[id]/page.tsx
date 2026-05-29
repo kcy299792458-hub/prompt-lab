@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Check, Copy, Eye, UserRound } from "lucide-react";
+import { ArrowLeft, Check, Copy, Eye, MessageCircle, Trash2, UserRound } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
 import { ReportButton } from "@/app/components/ReportButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -33,6 +33,15 @@ type PromptVersionRow = {
   body: string;
 };
 
+type CommentRow = {
+  id: string;
+  author_id: string | null;
+  guest_nickname: string | null;
+  body: string;
+  created_at: string;
+  profiles?: ProfileRelation;
+};
+
 type MetricCounts = {
   viewCount: number;
   copyCount: number;
@@ -43,11 +52,30 @@ type MetricPayload = {
   copy_count?: number | null;
 };
 
+type ProfileRelation = { nickname: string } | { nickname: string }[] | null;
+
+type SessionUser = {
+  id: string;
+};
+
 const visitorKeyStorageKey = "prompt-lab-visitor-key";
 
-function getProfileNickname(profile: UploadedImagePostRow["profiles"]) {
+function getProfileNickname(profile: ProfileRelation | undefined) {
   if (Array.isArray(profile)) return profile[0]?.nickname || "회원";
   return profile?.nickname || "회원";
+}
+
+function getAuthorName(item: { guest_nickname: string | null; profiles?: ProfileRelation }) {
+  return item.guest_nickname || getProfileNickname(item.profiles);
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
 function getVisitorKey() {
@@ -87,10 +115,34 @@ export default function UploadedImageDetailPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [post, setPost] = useState<UploadedImagePostRow | null>(null);
   const [versions, setVersions] = useState<PromptVersionRow[]>([]);
+  const [comments, setComments] = useState<CommentRow[]>([]);
   const [metrics, setMetrics] = useState<MetricCounts>({ viewCount: 0, copyCount: 0 });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [commentPasswords, setCommentPasswords] = useState<Record<string, string>>({});
+  const [commentForm, setCommentForm] = useState({
+    body: "",
+    guestNickname: "",
+    password: "",
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [commentMessage, setCommentMessage] = useState("");
+
+  const loadComments = async () => {
+    if (!supabase) return;
+
+    const commentResult = await supabase
+      .from("comments")
+      .select("id, author_id, guest_nickname, body, created_at, profiles(nickname)")
+      .eq("image_post_id", params.id)
+      .eq("is_hidden", false)
+      .order("created_at", { ascending: true });
+
+    if (!commentResult.error) {
+      setComments((commentResult.data ?? []) as CommentRow[]);
+    }
+  };
 
   useEffect(() => {
     if (!supabase) {
@@ -141,6 +193,13 @@ export default function UploadedImageDetailPage() {
         .eq("image_post_id", params.id)
         .order("created_at", { ascending: true });
 
+      const commentResult = await client
+        .from("comments")
+        .select("id, author_id, guest_nickname, body, created_at, profiles(nickname)")
+        .eq("image_post_id", params.id)
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: true });
+
       if (!isMounted) return;
 
       if (postError) {
@@ -150,6 +209,7 @@ export default function UploadedImageDetailPage() {
       setPost(postData);
       setMetrics(getMetricCountsFromPost(postData));
       setVersions((versionResult.data ?? []) as PromptVersionRow[]);
+      setComments((commentResult.data ?? []) as CommentRow[]);
       setIsLoading(false);
 
       if (postData) {
@@ -173,6 +233,22 @@ export default function UploadedImageDetailPage() {
     };
   }, [params.id, supabase]);
 
+  useEffect(() => {
+    if (!supabase) return;
+
+    supabase.auth.getSession().then(({ data }) => {
+      setSessionUser((data.session?.user as SessionUser | undefined) ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionUser((session?.user as SessionUser | undefined) ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
   const copyPrompt = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedKey(key);
@@ -190,6 +266,100 @@ export default function UploadedImageDetailPage() {
 
     const nextMetrics = getMetricCountsFromPayload(metricResult.data);
     if (nextMetrics) setMetrics(nextMetrics);
+  };
+
+  const submitComment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!supabase || !post) {
+      setCommentMessage("댓글을 등록할 수 없습니다.");
+      return;
+    }
+
+    if (!commentForm.body.trim()) {
+      setCommentMessage("댓글 내용을 입력하세요.");
+      return;
+    }
+
+    if (!sessionUser && commentForm.guestNickname.trim().length < 2) {
+      setCommentMessage("닉네임은 2자 이상이어야 합니다.");
+      return;
+    }
+
+    if (!sessionUser && commentForm.password.length < 4) {
+      setCommentMessage("비밀번호는 4자 이상이어야 합니다.");
+      return;
+    }
+
+    setCommentMessage("");
+
+    if (sessionUser) {
+      const { error } = await supabase.from("comments").insert({
+        author_id: sessionUser.id,
+        image_post_id: post.id,
+        body: commentForm.body.trim(),
+      });
+
+      if (error) {
+        setCommentMessage(error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase.rpc("create_guest_image_comment", {
+        p_image_post_id: post.id,
+        p_body: commentForm.body.trim(),
+        p_guest_nickname: commentForm.guestNickname.trim(),
+        p_password: commentForm.password,
+        p_visitor_key: getVisitorKey(),
+      });
+
+      if (error) {
+        setCommentMessage(
+          error.message.includes("create_guest_image_comment")
+            ? "이미지 댓글 기능을 사용하려면 021 SQL 실행이 필요합니다."
+            : error.message,
+        );
+        return;
+      }
+    }
+
+    setCommentForm({ body: "", guestNickname: "", password: "" });
+    await loadComments();
+  };
+
+  const deleteComment = async (comment: CommentRow) => {
+    if (!supabase) return;
+
+    if (sessionUser && comment.author_id === sessionUser.id) {
+      const { error } = await supabase
+        .from("comments")
+        .update({ is_hidden: true, updated_at: new Date().toISOString() })
+        .eq("id", comment.id)
+        .eq("author_id", sessionUser.id);
+
+      if (error) {
+        setCommentMessage(error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase.rpc("delete_guest_image_comment", {
+        p_comment_id: comment.id,
+        p_password: commentPasswords[comment.id] ?? "",
+      });
+
+      if (error) {
+        setCommentMessage(
+          error.message.includes("delete_guest_image_comment")
+            ? "이미지 댓글 삭제 기능을 사용하려면 021 SQL 실행이 필요합니다."
+            : error.message,
+        );
+        return;
+      }
+    }
+
+    setCommentMessage("댓글이 삭제됐습니다.");
+    setCommentPasswords({ ...commentPasswords, [comment.id]: "" });
+    await loadComments();
   };
 
   const images = post?.image_urls && post.image_urls.length > 0 ? post.image_urls : post ? [post.image_url] : [];
@@ -247,6 +417,9 @@ export default function UploadedImageDetailPage() {
                     </span>
                     <span>
                       <Copy size={14} aria-hidden="true" /> 복사 {metrics.copyCount}
+                    </span>
+                    <span>
+                      <MessageCircle size={14} aria-hidden="true" /> 댓글 {comments.length}
                     </span>
                     <span>{post.model}</span>
                     <span>{post.aspect_ratio}</span>
@@ -331,6 +504,8 @@ export default function UploadedImageDetailPage() {
                 <strong>{metrics.viewCount}</strong>
                 <span>복사</span>
                 <strong>{metrics.copyCount}</strong>
+                <span>댓글</span>
+                <strong>{comments.length}</strong>
                 <span>비율</span>
                 <strong>{post.aspect_ratio}</strong>
                 <span>스타일</span>
@@ -342,6 +517,93 @@ export default function UploadedImageDetailPage() {
                 ))}
               </div>
             </aside>
+
+            <section className="prompt-detail-section dc-comment-section image-comment-section">
+              <div className="section-heading">
+                <h2>댓글</h2>
+                <span>{comments.length}개</span>
+              </div>
+
+              <form className="dc-comment-form" onSubmit={submitComment}>
+                {!sessionUser && (
+                  <div className="dc-write-grid">
+                    <input
+                      value={commentForm.guestNickname}
+                      onChange={(event) =>
+                        setCommentForm({ ...commentForm, guestNickname: event.target.value })
+                      }
+                      placeholder="닉네임"
+                      aria-label="닉네임"
+                    />
+                    <input
+                      value={commentForm.password}
+                      onChange={(event) =>
+                        setCommentForm({ ...commentForm, password: event.target.value })
+                      }
+                      placeholder="수정/삭제 비밀번호"
+                      type="password"
+                      aria-label="수정/삭제 비밀번호"
+                    />
+                  </div>
+                )}
+                <textarea
+                  value={commentForm.body}
+                  onChange={(event) => setCommentForm({ ...commentForm, body: event.target.value })}
+                  placeholder="댓글을 입력하세요"
+                  aria-label="댓글"
+                />
+                <button className="primary-button dc-write-submit" type="submit">
+                  댓글 등록
+                </button>
+              </form>
+
+              {commentMessage && <p className="dc-status-message">{commentMessage}</p>}
+
+              <div className="comment-list full">
+                {comments.length > 0 ? (
+                  comments.map((comment) => (
+                    <article key={comment.id}>
+                      <div>
+                        <strong>@{getAuthorName(comment)}</strong>
+                        <span>{formatDate(comment.created_at)}</span>
+                        <ReportButton
+                          targetType="comment"
+                          targetId={comment.id}
+                          targetTitle={`이미지 댓글 - ${post.title}`}
+                          targetPath={`/images/${post.id}`}
+                          compact
+                        />
+                      </div>
+                      <p>{comment.body}</p>
+                      {(!comment.author_id || comment.author_id === sessionUser?.id) && (
+                        <div className="dc-comment-tools">
+                          {!comment.author_id && (
+                            <input
+                              value={commentPasswords[comment.id] ?? ""}
+                              onChange={(event) =>
+                                setCommentPasswords({
+                                  ...commentPasswords,
+                                  [comment.id]: event.target.value,
+                                })
+                              }
+                              placeholder="삭제 비밀번호"
+                              type="password"
+                              aria-label="댓글 삭제 비밀번호"
+                            />
+                          )}
+                          <button type="button" onClick={() => deleteComment(comment)}>
+                            <Trash2 size={13} aria-hidden="true" />
+                            삭제
+                          </button>
+                        </div>
+                      )}
+                    </article>
+                  ))
+                ) : (
+                  <p>아직 댓글이 없습니다. 첫 반응을 남겨보세요.</p>
+                )}
+              </div>
+            </section>
           </>
         )}
       </section>

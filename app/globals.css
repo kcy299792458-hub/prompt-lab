@@ -655,6 +655,10 @@
   font-size: 13px;
 }
 
+.image-comment-section {
+  grid-column: 1 / -1;
+}
+
 .dc-write-panel,
 .dc-comment-form {
   background: #ffffff;
