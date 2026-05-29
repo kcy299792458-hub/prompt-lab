@@ -7,6 +7,7 @@ import { AuthControls } from "@/app/components/AuthControls";
 import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type RequestStatus = "all" | "open" | "resolved";
+type RequestSortOrder = "latest" | "oldest";
 
 type PromptRequestRow = {
   id: string;
@@ -39,6 +40,7 @@ export default function PromptRequestsPage() {
   const [answerCounts, setAnswerCounts] = useState<Record<string, number>>({});
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<RequestStatus>("all");
+  const [sortOrder, setSortOrder] = useState<RequestSortOrder>("latest");
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -99,7 +101,8 @@ export default function PromptRequestsPage() {
   const filteredRequests = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return requests.filter((request) => {
+    return requests
+      .filter((request) => {
       const matchesStatus = status === "all" || request.status === status;
       const searchableText = [
         request.title,
@@ -112,8 +115,12 @@ export default function PromptRequestsPage() {
         .toLowerCase();
 
       return matchesStatus && searchableText.includes(normalizedQuery);
-    });
-  }, [query, requests, status]);
+      })
+      .sort((a, b) => {
+        const dateDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return sortOrder === "latest" ? dateDiff : -dateDiff;
+      });
+  }, [query, requests, sortOrder, status]);
 
   const statusTabs: Array<{ label: string; value: RequestStatus }> = [
     { label: "전체", value: "all" },
@@ -197,10 +204,30 @@ export default function PromptRequestsPage() {
                 <p className="section-kicker">Prompt Request</p>
                 <h2>{filteredRequests.length}개의 요청</h2>
               </div>
-              <Link href="/requests/new" className="primary-button dc-write-button">
-                <PencilLine size={15} aria-hidden="true" />
-                요청하기
-              </Link>
+              <div className="dc-toolbar-actions">
+                <div className="sort-tabs" aria-label="요청글 정렬">
+                  <button
+                    type="button"
+                    className={sortOrder === "latest" ? "active" : ""}
+                    onClick={() => setSortOrder("latest")}
+                    aria-pressed={sortOrder === "latest"}
+                  >
+                    최신순
+                  </button>
+                  <button
+                    type="button"
+                    className={sortOrder === "oldest" ? "active" : ""}
+                    onClick={() => setSortOrder("oldest")}
+                    aria-pressed={sortOrder === "oldest"}
+                  >
+                    오래된순
+                  </button>
+                </div>
+                <Link href="/requests/new" className="primary-button dc-write-button">
+                  <PencilLine size={15} aria-hidden="true" />
+                  요청하기
+                </Link>
+              </div>
             </div>
 
             {message && <p className="dc-status-message">{message}</p>}

@@ -293,6 +293,14 @@
   margin-top: 2px;
 }
 
+.dc-toolbar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
 .dc-board-toolbar .sort-tabs {
   border-radius: 0;
   padding: 2px;

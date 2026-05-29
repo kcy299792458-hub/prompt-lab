@@ -19,6 +19,7 @@ import { getPromptLabVisitorKey } from "@/lib/visitor-key";
 
 const boardCategories = ["전체", "공지", "자유", "질문", "팁/연구"] as const;
 type ActiveCategory = (typeof boardCategories)[number];
+type BoardSortOrder = "latest" | "oldest";
 
 type BoardPostRow = {
   id: string;
@@ -92,6 +93,7 @@ function getConceptScore(post: BoardPostRow, recommends: number, comments: numbe
 export default function BoardsPage() {
   const [category, setCategory] = useState<ActiveCategory>("전체");
   const [query, setQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<BoardSortOrder>("latest");
   const [posts, setPosts] = useState<BoardPostRow[]>([]);
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [recommendCounts, setRecommendCounts] = useState<Record<string, number>>({});
@@ -217,7 +219,8 @@ export default function BoardsPage() {
   const filteredPosts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return posts.filter((post) => {
+    return posts
+      .filter((post) => {
       const matchesCategory = category === "전체" || post.category === category;
       const matchesQuery = [post.title, post.body, getAuthorName(post), post.category]
         .join(" ")
@@ -225,8 +228,12 @@ export default function BoardsPage() {
         .includes(normalizedQuery);
 
       return matchesCategory && matchesQuery;
-    });
-  }, [category, posts, query]);
+      })
+      .sort((a, b) => {
+        const dateDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return sortOrder === "latest" ? dateDiff : -dateDiff;
+      });
+  }, [category, posts, query, sortOrder]);
 
   const conceptPosts = useMemo(
     () =>
@@ -493,14 +500,34 @@ export default function BoardsPage() {
                 <p className="section-kicker">Community</p>
                 <h2>{filteredPosts.length}개의 글</h2>
               </div>
-              <button
-                type="button"
-                className="primary-button dc-write-button"
-                onClick={() => setIsWriteOpen((value) => !value)}
-              >
-                <PencilLine size={15} aria-hidden="true" />
-                글쓰기
-              </button>
+              <div className="dc-toolbar-actions">
+                <div className="sort-tabs" aria-label="게시글 정렬">
+                  <button
+                    type="button"
+                    className={sortOrder === "latest" ? "active" : ""}
+                    onClick={() => setSortOrder("latest")}
+                    aria-pressed={sortOrder === "latest"}
+                  >
+                    최신순
+                  </button>
+                  <button
+                    type="button"
+                    className={sortOrder === "oldest" ? "active" : ""}
+                    onClick={() => setSortOrder("oldest")}
+                    aria-pressed={sortOrder === "oldest"}
+                  >
+                    오래된순
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="primary-button dc-write-button"
+                  onClick={() => setIsWriteOpen((value) => !value)}
+                >
+                  <PencilLine size={15} aria-hidden="true" />
+                  글쓰기
+                </button>
+              </div>
             </div>
 
             {isWriteOpen && (
