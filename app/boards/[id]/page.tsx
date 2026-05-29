@@ -335,14 +335,16 @@ export default function BoardPostPage() {
     if (!supabase) return;
 
     if (sessionUser && comment.author_id === sessionUser.id) {
-      const { error } = await supabase
-        .from("comments")
-        .update({ is_hidden: true, updated_at: new Date().toISOString() })
-        .eq("id", comment.id)
-        .eq("author_id", sessionUser.id);
+      const { error } = await supabase.rpc("delete_member_comment", {
+        p_comment_id: comment.id,
+      });
 
       if (error) {
-        setMessage(error.message);
+        setMessage(
+          error.message.includes("delete_member_comment")
+            ? "회원 댓글 삭제 기능을 사용하려면 023 SQL 실행이 필요합니다."
+            : error.message,
+        );
         return;
       }
     } else if (!comment.author_id) {
