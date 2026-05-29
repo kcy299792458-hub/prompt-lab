@@ -3710,9 +3710,12 @@ body,
   color: #ffffff;
 }
 
-.request-page-layout,
-.request-detail-layout {
+.request-page-layout {
   grid-template-columns: 190px minmax(0, 1fr);
+}
+
+.request-detail-layout {
+  grid-template-columns: minmax(0, 1fr) 250px;
 }
 
 .request-list-head,
