@@ -55,6 +55,14 @@ type PromptCommentActivityRow = {
   body: string;
   created_at: string;
 };
+type UploadedCommentActivityRow = {
+  id: string;
+  image_post_id: string | null;
+  guest_nickname: string | null;
+  body: string;
+  created_at: string;
+  profiles?: { nickname: string } | { nickname: string }[] | null;
+};
 type GalleryItem = {
   kind: "seed" | "uploaded";
   id: string;
@@ -82,6 +90,10 @@ type GalleryItem = {
 function getProfileNickname(profile: UploadedImagePostRow["profiles"]) {
   if (Array.isArray(profile)) return profile[0]?.nickname || "회원";
   return profile?.nickname || "회원";
+}
+
+function normalizeContentKey(value: string) {
+  return value.trim().toLowerCase();
 }
 
 function promptToGalleryItem(prompt: Prompt): GalleryItem {
@@ -141,6 +153,7 @@ export default function Home() {
   const [uploadedPosts, setUploadedPosts] = useState<UploadedImagePostRow[]>([]);
   const [uploadedPostCounts, setUploadedPostCounts] = useState<UploadedPostCounts>({});
   const [recentPromptComments, setRecentPromptComments] = useState<PromptCommentActivityRow[]>([]);
+  const [recentImageComments, setRecentImageComments] = useState<UploadedCommentActivityRow[]>([]);
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   useEffect(() => {
@@ -268,6 +281,7 @@ export default function Home() {
       if (error) {
         setUploadedPosts([]);
         setUploadedPostCounts({});
+        setRecentImageComments([]);
         return;
       }
 
@@ -280,7 +294,7 @@ export default function Home() {
       });
 
       if (postIds.length > 0) {
-        const [reactionResult, commentResult] = await Promise.all([
+        const [reactionResult, commentResult, recentImageCommentResult] = await Promise.all([
           client
             .from("reactions")
             .select("image_post_id, kind")
@@ -290,6 +304,13 @@ export default function Home() {
             .select("image_post_id")
             .eq("is_hidden", false)
             .in("image_post_id", postIds),
+          client
+            .from("comments")
+            .select("id, image_post_id, guest_nickname, body, created_at, profiles(nickname)")
+            .eq("is_hidden", false)
+            .in("image_post_id", postIds)
+            .order("created_at", { ascending: false })
+            .limit(5),
         ]);
 
         if (!isMounted) return;
@@ -308,6 +329,16 @@ export default function Home() {
             nextCounts[comment.image_post_id].comments += 1;
           });
         }
+
+        if (!recentImageCommentResult.error) {
+          setRecentImageComments(
+            (recentImageCommentResult.data ?? []) as UploadedCommentActivityRow[],
+          );
+        } else {
+          setRecentImageComments([]);
+        }
+      } else {
+        setRecentImageComments([]);
       }
 
       setUploadedPosts(nextRows);
@@ -321,32 +352,60 @@ export default function Home() {
     };
   }, [supabase]);
 
-  const galleryItems = useMemo(
-    () => [
+  const galleryItems = useMemo(() => {
+    const uploadedTitleKeys = new Set(
+      uploadedPosts.map((post) => normalizeContentKey(post.title)),
+    );
+    const seedItems = prompts
+      .filter((prompt) => !uploadedTitleKeys.has(normalizeContentKey(prompt.title)))
+      .map(promptToGalleryItem);
+
+    return [
       ...uploadedPosts.map((post) => uploadedToGalleryItem(post, uploadedPostCounts[post.id])),
-      ...prompts.map(promptToGalleryItem),
-    ],
-    [uploadedPostCounts, uploadedPosts],
-  );
+      ...seedItems,
+    ];
+  }, [uploadedPostCounts, uploadedPosts]);
 
-  const popularPrompts = useMemo(
-    () =>
-      prompts
-        .map((prompt) => ({
-          prompt,
-          score:
-            (promptCounts[prompt.id]?.likes ?? 0) * 2 +
-            (promptCounts[prompt.id]?.saves ?? 0) +
-            (promptCounts[prompt.id]?.comments ?? 0),
-        }))
-        .sort((a, b) => b.score - a.score || b.prompt.id - a.prompt.id)
-        .slice(0, 8),
-    [promptCounts],
-  );
+  const popularPrompts = useMemo(() => {
+    const uploadedTitleKeys = new Set(
+      uploadedPosts.map((post) => normalizeContentKey(post.title)),
+    );
+    const uploadedItems = uploadedPosts.map((post) => {
+      const counts = uploadedPostCounts[post.id] ?? { likes: 0, saves: 0, comments: 0 };
 
-  const recentCommentItems = useMemo(
-    () =>
-      recentPromptComments.flatMap((comment) => {
+      return {
+        id: `uploaded-${post.id}`,
+        href: `/images/${post.id}`,
+        title: post.title,
+        score:
+          (post.copy_count ?? 0) * 5 +
+          (post.view_count ?? 0) +
+          counts.likes * 2 +
+          counts.saves +
+          counts.comments * 2,
+        sortKey: new Date(post.created_at).getTime(),
+      };
+    });
+    const seedItems = prompts
+      .filter((prompt) => !uploadedTitleKeys.has(normalizeContentKey(prompt.title)))
+      .map((prompt) => ({
+        id: `seed-${prompt.id}`,
+        href: getPromptPath(prompt),
+        title: prompt.title,
+        score:
+          (promptCounts[prompt.id]?.likes ?? 0) * 2 +
+          (promptCounts[prompt.id]?.saves ?? 0) +
+          (promptCounts[prompt.id]?.comments ?? 0),
+        sortKey: prompt.id,
+      }));
+
+    return [...uploadedItems, ...seedItems]
+      .sort((a, b) => b.score - a.score || b.sortKey - a.sortKey)
+      .slice(0, 8);
+  }, [promptCounts, uploadedPostCounts, uploadedPosts]);
+
+  const recentCommentItems = useMemo(() => {
+    const seedCommentItems = recentPromptComments.flatMap((comment) => {
         const prompt = prompts.find((item) => item.id === Number(comment.prompt_id));
         if (!prompt) return [];
 
@@ -357,9 +416,24 @@ export default function Home() {
           meta: `@${comment.guest_nickname} · ${prompt.title}`,
           sortKey: new Date(comment.created_at).getTime(),
         };
-      }),
-    [recentPromptComments],
-  );
+      });
+    const imageCommentItems = recentImageComments.flatMap((comment) => {
+      const post = uploadedPosts.find((item) => item.id === comment.image_post_id);
+      if (!post) return [];
+
+      return {
+        id: comment.id,
+        href: `/images/${post.id}`,
+        title: comment.body,
+        meta: `@${comment.guest_nickname || getProfileNickname(comment.profiles)} - ${post.title}`,
+        sortKey: new Date(comment.created_at).getTime(),
+      };
+    });
+
+    return [...seedCommentItems, ...imageCommentItems]
+      .sort((a, b) => b.sortKey - a.sortKey)
+      .slice(0, 5);
+  }, [recentImageComments, recentPromptComments, uploadedPosts]);
 
   const weeklyCreators = useMemo(() => {
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -478,11 +552,11 @@ export default function Home() {
             <span>랭킹</span>
           </div>
           <ol>
-            {popularPrompts.map(({ prompt, score }, index) => (
+            {popularPrompts.map((prompt, index) => (
               <li key={prompt.id}>
                 <span className="dc-rank-num">{index + 1}</span>
-                <Link href={getPromptPath(prompt)}>{prompt.title}</Link>
-                <small>{score > 0 ? score : "0"}</small>
+                <Link href={prompt.href}>{prompt.title}</Link>
+                <small>{prompt.score > 0 ? prompt.score : "0"}</small>
               </li>
             ))}
           </ol>
