@@ -336,12 +336,20 @@ export default function UploadedImageDetailPage() {
       });
 
       if (error) {
-        setCommentMessage(
-          error.message.includes("delete_member_comment")
-            ? "회원 댓글 삭제 기능을 사용하려면 023 SQL 실행이 필요합니다."
-            : error.message,
-        );
-        return;
+        const fallbackResult = await supabase
+          .from("comments")
+          .update({ is_hidden: true, updated_at: new Date().toISOString() })
+          .eq("id", comment.id)
+          .eq("author_id", sessionUser.id);
+
+        if (fallbackResult.error) {
+          setCommentMessage(
+            error.message.includes("delete_member_comment")
+              ? "회원 댓글 삭제 기능을 사용하려면 023 SQL 실행이 필요합니다."
+              : error.message,
+          );
+          return;
+        }
       }
     } else {
       const { error } = await supabase.rpc("delete_guest_image_comment", {
