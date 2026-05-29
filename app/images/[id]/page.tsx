@@ -483,10 +483,10 @@ export default function UploadedImageDetailPage() {
 
               <section className="prompt-detail-section uploaded-description-section">
                 <div className="section-heading">
-                  <h2>설명글</h2>
+                  <h2>프롬프트 사용 노트</h2>
                   <span>작성자 메모</span>
                 </div>
-                <p>{post.description || "설명이 없습니다."}</p>
+                <p>{post.description || "사용 노트가 없습니다."}</p>
               </section>
             </div>
 

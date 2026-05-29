@@ -338,21 +338,16 @@ export default function PromptDetailPage() {
 
           <section className="prompt-detail-section uploaded-description-section">
             <div className="section-heading">
-              <h2>설명글</h2>
-              <span>게시글 소개</span>
+              <h2>프롬프트 사용 노트</h2>
+              <span>작성자 메모/응용 팁</span>
             </div>
             <p>{prompt.description}</p>
-          </section>
-
-          {seoTips && (
-            <section className="prompt-detail-section">
-              <div className="section-heading">
-                <h2>프롬프트 사용 노트</h2>
-                <span>검색/응용 팁</span>
-              </div>
+            {seoTips && (
               <article className="prompt-guide-note">
                 <p>{promptUseNote}</p>
               </article>
+            )}
+            {seoTips && (
               <div className="prompt-guide-links">
                 <Link className="prompt-guide-link" href={getCategoryPath(prompt.category)}>
                   {prompt.category} 프롬프트 더 보기
@@ -366,8 +361,8 @@ export default function PromptDetailPage() {
                   </Link>
                 ))}
               </div>
-            </section>
-          )}
+            )}
+          </section>
 
           <section className="prompt-detail-section dc-comment-section">
             <div className="section-heading">

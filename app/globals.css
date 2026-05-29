@@ -3403,7 +3403,7 @@ body,
 }
 
 .upload-description-input {
-  min-height: 74px;
+  min-height: 150px;
   resize: vertical;
 }
 

@@ -35,6 +35,18 @@ function getStatusLabel(status: PromptRequestRow["status"]) {
   return status === "resolved" ? "해결됨" : "미해결";
 }
 
+function compareRequestCreatedAt(
+  a: PromptRequestRow,
+  b: PromptRequestRow,
+  sortOrder: RequestSortOrder,
+) {
+  const dateDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  if (dateDiff !== 0) return sortOrder === "latest" ? dateDiff : -dateDiff;
+
+  const idDiff = b.id.localeCompare(a.id);
+  return sortOrder === "latest" ? idDiff : -idDiff;
+}
+
 export default function PromptRequestsPage() {
   const [requests, setRequests] = useState<PromptRequestRow[]>([]);
   const [answerCounts, setAnswerCounts] = useState<Record<string, number>>({});
@@ -65,7 +77,8 @@ export default function PromptRequestsPage() {
             "id, author_id, guest_nickname, title, body, target_model, request_type, status, created_at, profiles(nickname)",
           )
           .eq("is_hidden", false)
-          .order("created_at", { ascending: false }),
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false }),
         client.from("prompt_request_answers").select("prompt_request_id").eq("is_hidden", false),
       ]);
 
@@ -116,10 +129,7 @@ export default function PromptRequestsPage() {
 
       return matchesStatus && searchableText.includes(normalizedQuery);
       })
-      .sort((a, b) => {
-        const dateDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        return sortOrder === "latest" ? dateDiff : -dateDiff;
-      });
+      .sort((a, b) => compareRequestCreatedAt(a, b, sortOrder));
   }, [query, requests, sortOrder, status]);
 
   const statusTabs: Array<{ label: string; value: RequestStatus }> = [

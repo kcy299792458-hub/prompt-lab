@@ -90,6 +90,14 @@ function getConceptScore(post: BoardPostRow, recommends: number, comments: numbe
   return engagementScore + recentBonus;
 }
 
+function comparePostCreatedAt(a: BoardPostRow, b: BoardPostRow, sortOrder: BoardSortOrder) {
+  const dateDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  if (dateDiff !== 0) return sortOrder === "latest" ? dateDiff : -dateDiff;
+
+  const idDiff = b.id.localeCompare(a.id);
+  return sortOrder === "latest" ? idDiff : -idDiff;
+}
+
 export default function BoardsPage() {
   const [category, setCategory] = useState<ActiveCategory>("전체");
   const [query, setQuery] = useState("");
@@ -135,7 +143,8 @@ export default function BoardsPage() {
         .from("board_posts")
         .select("id, author_id, guest_nickname, category, title, body, image_urls, created_at, is_hidden, profiles(nickname)")
         .eq("is_hidden", false)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false }),
     ]);
 
     let postData = initialPostResult.data as BoardPostRow[] | null;
@@ -146,7 +155,8 @@ export default function BoardsPage() {
         .from("board_posts")
         .select("id, author_id, guest_nickname, category, title, body, created_at, is_hidden, profiles(nickname)")
         .eq("is_hidden", false)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false });
 
       postData = retryResult.data as BoardPostRow[] | null;
       postError = retryResult.error;
@@ -229,10 +239,7 @@ export default function BoardsPage() {
 
       return matchesCategory && matchesQuery;
       })
-      .sort((a, b) => {
-        const dateDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        return sortOrder === "latest" ? dateDiff : -dateDiff;
-      });
+      .sort((a, b) => comparePostCreatedAt(a, b, sortOrder));
   }, [category, posts, query, sortOrder]);
 
   const conceptPosts = useMemo(

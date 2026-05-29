@@ -403,6 +403,44 @@ export default function UploadPage() {
             />
           </div>
 
+          <div className="dc-file-row">
+            <label className="dc-file-button">
+              <ImagePlus size={15} aria-hidden="true" />
+              이미지 선택
+              <input type="file" accept="image/*" multiple onChange={handleImageChange} />
+            </label>
+            <span>{images.length}장 선택됨</span>
+          </div>
+
+          {previews.length > 0 && (
+            <div className="upload-preview-grid">
+              {previews.map((preview, index) => (
+                <div className="dc-image-preview" key={preview}>
+                  <img src={preview} alt={`업로드 이미지 ${index + 1}`} />
+                  <button type="button" onClick={() => removeImage(index)} aria-label="이미지 제거">
+                    <X size={14} aria-hidden="true" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <textarea
+            value={form.prompt}
+            onChange={(event) => setForm({ ...form, prompt: event.target.value })}
+            placeholder="실제로 넣은 프롬프트 원문"
+            aria-label="실제로 넣은 프롬프트 원문"
+            className="upload-single-prompt-input"
+          />
+
+          <textarea
+            value={form.description}
+            onChange={(event) => setForm({ ...form, description: event.target.value })}
+            placeholder="프롬프트 사용노트"
+            aria-label="프롬프트 사용노트"
+            className="upload-description-input"
+          />
+
           <div className="upload-tag-panel">
             <div className="upload-tag-head">
               <strong>추천 태그</strong>
@@ -438,44 +476,6 @@ export default function UploadPage() {
               </div>
             )}
           </div>
-
-          <textarea
-            value={form.description}
-            onChange={(event) => setForm({ ...form, description: event.target.value })}
-            placeholder="설명"
-            aria-label="설명"
-            className="upload-description-input"
-          />
-
-          <div className="dc-file-row">
-            <label className="dc-file-button">
-              <ImagePlus size={15} aria-hidden="true" />
-              이미지 선택
-              <input type="file" accept="image/*" multiple onChange={handleImageChange} />
-            </label>
-            <span>{images.length}장 선택됨</span>
-          </div>
-
-          {previews.length > 0 && (
-            <div className="upload-preview-grid">
-              {previews.map((preview, index) => (
-                <div className="dc-image-preview" key={preview}>
-                  <img src={preview} alt={`업로드 이미지 ${index + 1}`} />
-                  <button type="button" onClick={() => removeImage(index)} aria-label="이미지 제거">
-                    <X size={14} aria-hidden="true" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <textarea
-            value={form.prompt}
-            onChange={(event) => setForm({ ...form, prompt: event.target.value })}
-            placeholder="실제로 넣은 프롬프트 원문"
-            aria-label="실제로 넣은 프롬프트 원문"
-            className="upload-single-prompt-input"
-          />
 
           {message && <p className="dc-status-message">{message}</p>}
 
