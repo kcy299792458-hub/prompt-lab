@@ -131,6 +131,41 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return jsonError("Unauthorized.", 401);
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  if (!supabase) {
+    return jsonError("Supabase service role is not configured.", 503);
+  }
+
+  const id = request.nextUrl.searchParams.get("id");
+
+  if (!id) {
+    return jsonError("Draft id is required.", 400);
+  }
+
+  const { data, error } = await supabase
+    .from("prompt_drafts")
+    .delete()
+    .eq("id", id)
+    .in("status", ["pending", "rejected", "failed"])
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return jsonError(error.message, 500);
+  }
+
+  if (!data) {
+    return jsonError("Draft was not found or cannot be deleted.", 404);
+  }
+
+  return NextResponse.json({ ok: true, deletedId: data.id });
+}
+
 export function OPTIONS() {
   return new NextResponse(null, { status: 204 });
 }

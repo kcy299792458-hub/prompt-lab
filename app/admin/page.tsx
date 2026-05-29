@@ -170,7 +170,7 @@ export default function AdminPage() {
         .select(
           "id, title, description, prompt_body, category, model, aspect_ratio, style, image_url, image_urls, tags, source_urls, source_notes, status, quality_score, risk_notes, agent_name, published_image_post_id, scheduled_for, created_at, updated_at",
         )
-        .neq("status", "published")
+        .in("status", ["pending", "approved", "failed"])
         .order("created_at", { ascending: false })
         .limit(40),
       supabase
