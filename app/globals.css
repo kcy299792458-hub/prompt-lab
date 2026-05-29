@@ -3804,6 +3804,13 @@ body,
   padding: 0 9px;
 }
 
+.request-status-message {
+  border-top: 1px solid #c7cbd0;
+  flex-basis: 100%;
+  margin-top: 2px;
+  padding: 8px 10px;
+}
+
 .request-guide-box li {
   grid-template-columns: 22px minmax(0, 1fr) 44px;
 }

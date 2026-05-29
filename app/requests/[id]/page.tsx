@@ -73,6 +73,7 @@ export default function PromptRequestDetailPage() {
   const [request, setRequest] = useState<PromptRequestRow | null>(null);
   const [answers, setAnswers] = useState<PromptRequestAnswerRow[]>([]);
   const [message, setMessage] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
   const [answerMessage, setAnswerMessage] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -123,6 +124,7 @@ export default function PromptRequestDetailPage() {
     setRequest((requestResult.data as PromptRequestRow | null) ?? null);
     setAnswers((answerResult.data ?? []) as PromptRequestAnswerRow[]);
     setMessage("");
+    setStatusMessage("");
     setIsLoading(false);
   };
 
@@ -148,7 +150,8 @@ export default function PromptRequestDetailPage() {
   }, [params.id, supabase]);
 
   const isOwner = Boolean(session && request?.author_id && session.user.id === request.author_id);
-  const canManageRequest = Boolean(request && (isOwner || !request.author_id));
+  const canGuestManageRequest = Boolean(request && !session && !request.author_id);
+  const canManageRequest = Boolean(request && (isOwner || canGuestManageRequest));
 
   const copyPrompt = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text);
@@ -240,7 +243,9 @@ export default function PromptRequestDetailPage() {
   };
 
   const updateStatus = async (nextStatus: "open" | "resolved") => {
-    if (!supabase || !request) return;
+    if (!supabase || !request || !canManageRequest) return;
+
+    setStatusMessage("");
 
     try {
       if (isOwner) {
@@ -252,7 +257,7 @@ export default function PromptRequestDetailPage() {
         if (error) throw new Error(error.message);
       } else {
         if (statusPassword.length < 4) {
-          setMessage("비밀번호는 4자 이상이어야 합니다.");
+          setStatusMessage("비밀번호는 4자 이상이어야 합니다.");
           return;
         }
 
@@ -268,12 +273,14 @@ export default function PromptRequestDetailPage() {
       setStatusPassword("");
       await loadRequest();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "상태를 바꿀 수 없습니다.");
+      setStatusMessage(error instanceof Error ? error.message : "상태를 바꿀 수 없습니다.");
     }
   };
 
   const deleteRequest = async () => {
     if (!supabase || !request || !canManageRequest) return;
+
+    setStatusMessage("");
 
     try {
       if (isOwner) {
@@ -285,7 +292,7 @@ export default function PromptRequestDetailPage() {
         if (error) throw new Error(error.message);
       } else {
         if (statusPassword.length < 4) {
-          setMessage("비밀번호는 4자 이상이어야 합니다.");
+          setStatusMessage("비밀번호는 4자 이상이어야 합니다.");
           return;
         }
 
@@ -299,7 +306,7 @@ export default function PromptRequestDetailPage() {
 
       router.push("/requests");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "요청 글을 삭제할 수 없습니다.");
+      setStatusMessage(error instanceof Error ? error.message : "요청 글을 삭제할 수 없습니다.");
     }
   };
 
@@ -410,7 +417,7 @@ export default function PromptRequestDetailPage() {
               <p className="dc-board-post-body">{request.body}</p>
 
               <div className="request-status-tools">
-                {canManageRequest && !isOwner && (
+                {canGuestManageRequest && (
                   <input
                     value={statusPassword}
                     onChange={(event) => setStatusPassword(event.target.value)}
@@ -441,6 +448,7 @@ export default function PromptRequestDetailPage() {
                   targetPath={`/requests/${request.id}`}
                   compact
                 />
+                {statusMessage && <p className="dc-status-message request-status-message">{statusMessage}</p>}
               </div>
             </article>
 
