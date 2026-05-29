@@ -49,7 +49,7 @@ async function main() {
 
   let payload;
   try {
-    payload = JSON.parse(raw);
+    payload = JSON.parse(raw.replace(/^\uFEFF/, ""));
   } catch (error) {
     console.error(`Invalid JSON: ${error.message}`);
     process.exit(2);
