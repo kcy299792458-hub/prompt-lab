@@ -108,6 +108,11 @@ POST https://prompt-lab-drab-xi.vercel.app/api/agent/prompt-drafts
 Use Authorization: Bearer ${PROMPT_LAB_AGENT_TOKEN}
 
 Set autoPublish to false.
+
+Implementation detail:
+- Write one draft at a time as valid JSON to `.hermes-draft.json`.
+- Submit it with `node scripts/submit-prompt-draft.mjs --file .hermes-draft.json`.
+- If the API returns an error, fix the JSON and retry once.
 ```
 
 ## Later Auto-Publish Prompt
