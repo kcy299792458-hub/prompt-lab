@@ -279,6 +279,78 @@ export function getPromptSeoTips(prompt: Prompt) {
   };
 }
 
+function getPromptSearchText(prompt: Prompt) {
+  return `${prompt.title} ${prompt.description} ${prompt.category} ${prompt.style} ${prompt.tags.join(" ")}`.toLowerCase();
+}
+
+function promptMatches(prompt: Prompt, keywords: string[]) {
+  const text = getPromptSearchText(prompt);
+  return keywords.some((keyword) => text.includes(keyword.toLowerCase()));
+}
+
+function getPromptFocus(prompt: Prompt) {
+  const genericTags = ["인스타트렌드", "civitai", "gpt image", "gemini", "nanobanana"];
+  const focusedTags = prompt.tags
+    .filter((tag) => !genericTags.includes(tag.toLowerCase()))
+    .slice(0, 2);
+
+  return focusedTags.length > 0 ? focusedTags.join(", ") : prompt.style;
+}
+
+export function getPromptUsageNote(prompt: Prompt) {
+  const focus = getPromptFocus(prompt);
+
+  if (promptMatches(prompt, ["qr", "controlnet"])) {
+    return "QR 원본과 ControlNet weight가 핵심입니다. 건축 묘사는 유지하고 denoise/weight만 조금씩 바꿔 코드 인식률을 확인하세요.";
+  }
+
+  if (promptMatches(prompt, ["블리스터", "액션피규어", "굿즈목업", "키링", "패키지"])) {
+    return "투명 플라스틱, 카드백, 소품 칸처럼 패키지 구조를 먼저 고정하세요. 로고나 읽히는 글자는 마지막에 최소한으로 넣는 편이 안정적입니다.";
+  }
+
+  if (promptMatches(prompt, ["웹툰실사화", "2010", "2013", "학원로맨스", "분식집", "첫사랑", "청춘"])) {
+    return "작품명을 직접 넣기보다 교복, 장소, 소품, 촬영연도 같은 시대 단서를 쓰는 프롬프트입니다. 인물 관계는 표정과 거리감으로 짧게 잡으면 충분합니다.";
+  }
+
+  if (promptMatches(prompt, ["vhs", "아날로그호러", "리미널", "언캐니", "기괴", "낮공포", "호러"])) {
+    return "무서운 대상을 설명하기보다 빈 공간, 시선, 반사, 카메라 결함을 남기는 쪽이 잘 맞습니다. 피사체를 과하게 선명하게 만들지 마세요.";
+  }
+
+  if (promptMatches(prompt, ["폰카", "디카", "캠코더", "minidv", "필름룩", "disposable", "폴라로이드", "스냅", "셀피"])) {
+    return `${focus} 질감이 핵심입니다. 완벽한 화질보다 플래시, 노출 실패, 저해상도, 업로드된 사진 같은 촬영 조건을 앞쪽에 두세요.`;
+  }
+
+  if (promptMatches(prompt, ["패션", "화보", "헤드샷", "포트레이트", "레인코트", "테크웨어", "한복"])) {
+    return "의상 실루엣과 소재, 조명 방향을 먼저 고정하면 결과가 덜 흔들립니다. 얼굴 묘사는 짧게 두고 스타일링 키워드에 힘을 주는 편이 좋습니다.";
+  }
+
+  if (promptMatches(prompt, ["제품사진", "향수", "화장품", "스킨케어", "스피커", "랜딩", "광고"])) {
+    return "제품의 재질, 배경 표면, 반사광을 분리해서 쓰세요. 실제 브랜드명이나 로고는 빼고 형태와 조명으로 고급감을 만드는 프롬프트입니다.";
+  }
+
+  if (promptMatches(prompt, ["캐릭터일관성", "스토리보드", "스티커", "메카", "픽셀아트", "아이콘", "캐릭터시트"])) {
+    return "캐릭터의 실루엣, 색, 소품 규칙을 고정하고 장면만 바꾸는 방식이 좋습니다. 여러 컷이 필요한 경우 패널 수와 시점을 명확히 적으세요.";
+  }
+
+  if (promptMatches(prompt, ["아이소메트릭", "미니어처", "3d", "클레이", "매크로", "도시", "카페"])) {
+    return "스케일감이 핵심입니다. 카메라 각도, 재질, 조명 위치를 먼저 고정하고 공간 요소만 바꾸면 같은 톤으로 변형하기 쉽습니다.";
+  }
+
+  if (promptMatches(prompt, ["콜라주", "매거진", "프롬프트카드", "캐러셀", "스크랩북", "저널", "포스터", "게임ui"])) {
+    return "레이아웃형 프롬프트라 글자가 깨질 수 있습니다. 읽히는 문구는 최소화하고 프레임, 종이 질감, 스티커 배치를 먼저 설계하세요.";
+  }
+
+  if (promptMatches(prompt, ["세계관", "판타지", "솔라펑크", "sf", "타임트래블", "모노리스", "도서관"])) {
+    return "장면 규모와 시대 규칙을 먼저 정해야 산만하지 않습니다. 건축, 기후, 교통수단 중 하나를 중심 단서로 잡아보세요.";
+  }
+
+  if (prompt.category === "사진/시네마틱") {
+    return `${focus}를 살리는 사진 프롬프트입니다. 피사체보다 촬영 방식, 시간대, 렌즈/노출 조건을 먼저 고정하면 결과가 자연스럽습니다.`;
+  }
+
+  return `${focus}가 핵심인 프롬프트입니다. 원본 구조는 유지하고 피사체, 배경, 조명 중 하나만 바꾸면서 변형하면 비교하기 쉽습니다.`;
+}
+
 export function getPromptJsonLd(prompt: Prompt) {
   const pageUrl = absoluteUrl(getPromptPath(prompt));
   const imageUrl = absoluteUrl(prompt.image);

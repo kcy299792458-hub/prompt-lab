@@ -10,6 +10,7 @@ import {
   Copy,
   Heart,
   MessageCircle,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { AuthControls } from "@/app/components/AuthControls";
@@ -22,23 +23,31 @@ import {
   getCategoryPath,
   getModelPath,
   getPromptPath,
-  getPromptSeoTips,
+  getPromptUsageNote,
   getTagPath,
 } from "@/lib/seo";
 
 type PromptCommentRow = {
   id: string;
   prompt_id: number;
-  guest_nickname: string;
+  author_id: string | null;
+  guest_nickname: string | null;
   body: string;
   created_at: string;
   is_hidden: boolean;
+  profiles?: ProfileRelation;
 };
 
 type PromptCounts = {
   likes: number;
   saves: number;
   comments: number;
+};
+
+type ProfileRelation = { nickname: string } | { nickname: string }[] | null;
+
+type SessionUser = {
+  id: string;
 };
 
 function formatDate(value: string) {
@@ -50,6 +59,15 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function getProfileNickname(profile: ProfileRelation | undefined) {
+  if (Array.isArray(profile)) return profile[0]?.nickname || "회원";
+  return profile?.nickname || "회원";
+}
+
+function getCommentAuthorName(comment: PromptCommentRow) {
+  return comment.guest_nickname || getProfileNickname(comment.profiles);
+}
+
 export default function PromptDetailPage() {
   const params = useParams<{ id: string }>();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -57,6 +75,8 @@ export default function PromptDetailPage() {
   const [counts, setCounts] = useState<PromptCounts>({ likes: 0, saves: 0, comments: 0 });
   const [activeReactions, setActiveReactions] = useState({ like: false, save: false });
   const [comments, setComments] = useState<PromptCommentRow[]>([]);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [commentPasswords, setCommentPasswords] = useState<Record<string, string>>({});
   const [commentForm, setCommentForm] = useState({
     guestNickname: "",
     password: "",
@@ -74,26 +94,52 @@ export default function PromptDetailPage() {
   const promptVersions = prompt ? getPromptVersions(prompt) : [];
   const primaryPromptVersion = promptVersions[0] ?? null;
   const authorName = prompt?.authorName || "운영자";
-  const seoTips = prompt ? getPromptSeoTips(prompt) : null;
-  const promptUseNote = seoTips
-    ? [seoTips.core, seoTips.model, seoTips.variation, seoTips.failure].join(" ")
-    : prompt?.description ?? "";
+  const promptUseNote = prompt ? getPromptUsageNote(prompt) : "";
 
   const loadInteractions = async (currentVisitorKey = visitorKey) => {
     if (!supabase || !prompt) return;
 
-    const [reactionResult, commentResult] = await Promise.all([
-      supabase
-        .from("prompt_reactions")
-        .select("kind, visitor_key")
-        .eq("prompt_id", prompt.id),
-      supabase
+    const reactionQuery = supabase
+      .from("prompt_reactions")
+      .select("kind, visitor_key")
+      .eq("prompt_id", prompt.id);
+
+    const commentQuery = (async () => {
+      const result = await supabase
         .from("prompt_comments")
-        .select("id, prompt_id, guest_nickname, body, created_at, is_hidden")
+        .select("id, prompt_id, author_id, guest_nickname, body, created_at, is_hidden, profiles(nickname)")
         .eq("prompt_id", prompt.id)
         .eq("is_hidden", false)
-        .order("created_at", { ascending: true }),
-    ]);
+        .order("created_at", { ascending: true });
+
+      if (
+        result.error?.message.includes("author_id") ||
+        result.error?.message.includes("relationship")
+      ) {
+        const fallbackResult = await supabase
+          .from("prompt_comments")
+          .select("id, prompt_id, guest_nickname, body, created_at, is_hidden")
+          .eq("prompt_id", prompt.id)
+          .eq("is_hidden", false)
+          .order("created_at", { ascending: true });
+
+        return {
+          data: (fallbackResult.data ?? []).map((comment) => ({
+            ...comment,
+            author_id: null,
+            profiles: null,
+          })) as PromptCommentRow[],
+          error: fallbackResult.error,
+        };
+      }
+
+      return {
+        data: (result.data ?? []) as PromptCommentRow[],
+        error: result.error,
+      };
+    })();
+
+    const [reactionResult, commentResult] = await Promise.all([reactionQuery, commentQuery]);
 
     if (!reactionResult.error) {
       const nextCounts = { likes: 0, saves: 0, comments: 0 };
@@ -128,6 +174,22 @@ export default function PromptDetailPage() {
   useEffect(() => {
     setVisitorKey(getPromptLabVisitorKey());
   }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    supabase.auth.getSession().then(({ data }) => {
+      setSessionUser((data.session?.user as SessionUser | undefined) ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionUser((session?.user as SessionUser | undefined) ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
 
   useEffect(() => {
     if (!visitorKey) return;
@@ -179,27 +241,34 @@ export default function PromptDetailPage() {
       return;
     }
 
-    if (commentForm.guestNickname.trim().length < 2) {
+    if (!sessionUser && commentForm.guestNickname.trim().length < 2) {
       setCommentMessage("닉네임은 2자 이상이어야 합니다.");
       return;
     }
 
-    if (commentForm.password.length < 4) {
+    if (!sessionUser && commentForm.password.length < 4) {
       setCommentMessage("비밀번호는 4자 이상이어야 합니다.");
       return;
     }
 
-    const { error } = await supabase.rpc("create_guest_prompt_comment", {
-      p_prompt_id: prompt.id,
-      p_body: commentForm.body.trim(),
-      p_guest_nickname: commentForm.guestNickname.trim(),
-      p_password: commentForm.password,
-      p_visitor_key: visitorKey || getPromptLabVisitorKey(),
-    });
+    const { error } = sessionUser
+      ? await supabase.rpc("create_member_prompt_comment", {
+          p_prompt_id: prompt.id,
+          p_body: commentForm.body.trim(),
+        })
+      : await supabase.rpc("create_guest_prompt_comment", {
+          p_prompt_id: prompt.id,
+          p_body: commentForm.body.trim(),
+          p_guest_nickname: commentForm.guestNickname.trim(),
+          p_password: commentForm.password,
+          p_visitor_key: visitorKey || getPromptLabVisitorKey(),
+        });
 
     if (error) {
       setCommentMessage(
-        error.message.includes("p_visitor_key")
+        error.message.includes("create_member_prompt_comment")
+          ? "회원 댓글 기능을 사용하려면 028 SQL 실행이 필요합니다."
+          : error.message.includes("p_visitor_key")
           ? "스팸 방지 기능을 사용하려면 014 SQL 실행이 필요합니다."
           : error.message || "댓글을 등록할 수 없습니다.",
       );
@@ -208,6 +277,42 @@ export default function PromptDetailPage() {
 
     setCommentForm({ guestNickname: "", password: "", body: "" });
     setCommentMessage("");
+    await loadInteractions(visitorKey);
+  };
+
+  const deleteComment = async (comment: PromptCommentRow) => {
+    if (!supabase) return;
+
+    if (sessionUser && comment.author_id === sessionUser.id) {
+      const { error } = await supabase.rpc("delete_member_prompt_comment", {
+        p_comment_id: comment.id,
+      });
+
+      if (error) {
+        setCommentMessage(
+          error.message.includes("delete_member_prompt_comment")
+            ? "회원 댓글 삭제 기능을 사용하려면 028 SQL 실행이 필요합니다."
+            : error.message,
+        );
+        return;
+      }
+    } else if (!comment.author_id) {
+      const { error } = await supabase.rpc("delete_guest_prompt_comment", {
+        p_comment_id: comment.id,
+        p_password: commentPasswords[comment.id] ?? "",
+      });
+
+      if (error) {
+        setCommentMessage(error.message || "댓글을 삭제할 수 없습니다.");
+        return;
+      }
+    } else {
+      setCommentMessage("본인이 작성한 댓글만 삭제할 수 있습니다.");
+      return;
+    }
+
+    setCommentMessage("댓글이 삭제됐습니다.");
+    setCommentPasswords({ ...commentPasswords, [comment.id]: "" });
     await loadInteractions(visitorKey);
   };
 
@@ -345,21 +450,19 @@ export default function PromptDetailPage() {
                 <p>{promptUseNote}</p>
               </article>
             )}
-            {seoTips && (
-              <div className="prompt-guide-links">
-                <Link className="prompt-guide-link" href={getCategoryPath(prompt.category)}>
-                  {prompt.category} 프롬프트 더 보기
+            <div className="prompt-guide-links">
+              <Link className="prompt-guide-link" href={getCategoryPath(prompt.category)}>
+                {prompt.category} 프롬프트 더 보기
+              </Link>
+              <Link className="prompt-guide-link" href={getModelPath(prompt.model)}>
+                {prompt.model} 예시 더 보기
+              </Link>
+              {prompt.tags.slice(0, 4).map((tag) => (
+                <Link className="prompt-guide-link" href={getTagPath(tag)} key={tag}>
+                  #{tag}
                 </Link>
-                <Link className="prompt-guide-link" href={getModelPath(prompt.model)}>
-                  {prompt.model} 예시 더 보기
-                </Link>
-                {prompt.tags.slice(0, 4).map((tag) => (
-                  <Link className="prompt-guide-link" href={getTagPath(tag)} key={tag}>
-                    #{tag}
-                  </Link>
-                ))}
-              </div>
-            )}
+              ))}
+            </div>
           </section>
 
           <section className="prompt-detail-section dc-comment-section">
@@ -369,25 +472,27 @@ export default function PromptDetailPage() {
             </div>
 
             <form className="dc-comment-form" onSubmit={submitComment}>
-              <div className="dc-write-grid">
-                <input
-                  value={commentForm.guestNickname}
-                  onChange={(event) =>
-                    setCommentForm({ ...commentForm, guestNickname: event.target.value })
-                  }
-                  placeholder="닉네임"
-                  aria-label="닉네임"
-                />
-                <input
-                  value={commentForm.password}
-                  onChange={(event) =>
-                    setCommentForm({ ...commentForm, password: event.target.value })
-                  }
-                  placeholder="삭제 비밀번호"
-                  type="password"
-                  aria-label="삭제 비밀번호"
-                />
-              </div>
+              {!sessionUser && (
+                <div className="dc-write-grid">
+                  <input
+                    value={commentForm.guestNickname}
+                    onChange={(event) =>
+                      setCommentForm({ ...commentForm, guestNickname: event.target.value })
+                    }
+                    placeholder="닉네임"
+                    aria-label="닉네임"
+                  />
+                  <input
+                    value={commentForm.password}
+                    onChange={(event) =>
+                      setCommentForm({ ...commentForm, password: event.target.value })
+                    }
+                    placeholder="수정/삭제 비밀번호"
+                    type="password"
+                    aria-label="수정/삭제 비밀번호"
+                  />
+                </div>
+              )}
               <textarea
                 value={commentForm.body}
                 onChange={(event) => setCommentForm({ ...commentForm, body: event.target.value })}
@@ -406,7 +511,7 @@ export default function PromptDetailPage() {
                 comments.map((comment) => (
                   <article key={comment.id}>
                     <div>
-                      <strong>@{comment.guest_nickname}</strong>
+                      <strong>@{getCommentAuthorName(comment)}</strong>
                       <span>{formatDate(comment.created_at)}</span>
                       <ReportButton
                         targetType="prompt_comment"
@@ -417,6 +522,28 @@ export default function PromptDetailPage() {
                       />
                     </div>
                     <p>{comment.body}</p>
+                    {(!comment.author_id || comment.author_id === sessionUser?.id) && (
+                      <div className="dc-comment-tools">
+                        {!comment.author_id && (
+                          <input
+                            value={commentPasswords[comment.id] ?? ""}
+                            onChange={(event) =>
+                              setCommentPasswords({
+                                ...commentPasswords,
+                                [comment.id]: event.target.value,
+                              })
+                            }
+                            placeholder="삭제 비밀번호"
+                            type="password"
+                            aria-label="댓글 삭제 비밀번호"
+                          />
+                        )}
+                        <button type="button" onClick={() => deleteComment(comment)}>
+                          <Trash2 size={13} aria-hidden="true" />
+                          삭제
+                        </button>
+                      </div>
+                    )}
                   </article>
                 ))
               ) : (

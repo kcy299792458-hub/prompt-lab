@@ -51,9 +51,10 @@ type UploadedCommentRow = {
 type PromptCommentActivityRow = {
   id: string;
   prompt_id: number;
-  guest_nickname: string;
+  guest_nickname: string | null;
   body: string;
   created_at: string;
+  profiles?: { nickname: string } | { nickname: string }[] | null;
 };
 type UploadedCommentActivityRow = {
   id: string;
@@ -244,13 +245,38 @@ export default function Home() {
     async function loadCommunityPanels() {
       const promptIds = prompts.map((prompt) => prompt.id);
 
-      const commentResult = await client
-        .from("prompt_comments")
-        .select("id, prompt_id, guest_nickname, body, created_at")
-        .eq("is_hidden", false)
-        .in("prompt_id", promptIds)
-        .order("created_at", { ascending: false })
-        .limit(5);
+      const commentResult = await (async () => {
+        const result = await client
+          .from("prompt_comments")
+          .select("id, prompt_id, guest_nickname, body, created_at, profiles(nickname)")
+          .eq("is_hidden", false)
+          .in("prompt_id", promptIds)
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (result.error?.message.includes("relationship")) {
+          const fallbackResult = await client
+            .from("prompt_comments")
+            .select("id, prompt_id, guest_nickname, body, created_at")
+            .eq("is_hidden", false)
+            .in("prompt_id", promptIds)
+            .order("created_at", { ascending: false })
+            .limit(5);
+
+          return {
+            data: (fallbackResult.data ?? []).map((comment) => ({
+              ...comment,
+              profiles: null,
+            })) as PromptCommentActivityRow[],
+            error: fallbackResult.error,
+          };
+        }
+
+        return {
+          data: (result.data ?? []) as PromptCommentActivityRow[],
+          error: result.error,
+        };
+      })();
 
       if (!isMounted) return;
 
@@ -440,7 +466,7 @@ export default function Home() {
           id: comment.id,
           href: getPromptPath(prompt),
           title: comment.body,
-          meta: `@${comment.guest_nickname} · ${prompt.title}`,
+          meta: `@${comment.guest_nickname || getProfileNickname(comment.profiles)} · ${prompt.title}`,
           sortKey: new Date(comment.created_at).getTime(),
         };
       });
