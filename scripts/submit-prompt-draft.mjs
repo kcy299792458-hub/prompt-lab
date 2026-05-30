@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { readFile } from "node:fs/promises";
+import { extname, resolve } from "node:path";
 
 const usage = `
 Usage:
@@ -16,6 +17,22 @@ function getArg(name) {
   const index = process.argv.indexOf(name);
   if (index === -1) return "";
   return process.argv[index + 1] || "";
+}
+
+function mimeTypeForPath(filePath) {
+  switch (extname(filePath).toLowerCase()) {
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".png":
+      return "image/png";
+    case ".webp":
+      return "image/webp";
+    case ".gif":
+      return "image/gif";
+    default:
+      return "";
+  }
 }
 
 async function readStdin() {
@@ -53,6 +70,20 @@ async function main() {
   } catch (error) {
     console.error(`Invalid JSON: ${error.message}`);
     process.exit(2);
+  }
+
+  if (payload && typeof payload === "object" && typeof payload.imageFile === "string") {
+    const imagePath = resolve(payload.imageFile);
+    const mimeType = mimeTypeForPath(imagePath);
+
+    if (!mimeType) {
+      console.error("imageFile must be a .jpg, .jpeg, .png, .webp, or .gif file.");
+      process.exit(2);
+    }
+
+    payload.imageBase64 = (await readFile(imagePath)).toString("base64");
+    payload.imageMimeType = mimeType;
+    delete payload.imageFile;
   }
 
   const response = await fetch(endpoint, {

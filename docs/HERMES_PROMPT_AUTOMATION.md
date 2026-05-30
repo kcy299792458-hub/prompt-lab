@@ -112,6 +112,8 @@ Set autoPublish to false.
 Implementation detail:
 - Write one draft at a time as valid JSON to `.hermes-draft.json`.
 - Submit it with `node scripts/submit-prompt-draft.mjs --file .hermes-draft.json`.
+- If Hermes creates a local sample image, set `"imageFile": "C:/absolute/path/to/image.png"` in the JSON.
+  The submit script will send it to Prompt Lab and the API will upload it to Supabase Storage.
 - If the API returns an error, fix the JSON and retry once.
 ```
 
