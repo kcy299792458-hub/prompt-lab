@@ -20,6 +20,7 @@ Set these in Vercel Project Settings.
 SUPABASE_SERVICE_ROLE_KEY=...
 PROMPT_LAB_AGENT_TOKEN=...
 PROMPT_LAB_AGENT_AUTOPUBLISH=false
+PROMPT_LAB_AGENT_AUTOPUBLISH_MIN_SCORE=8.5
 PROMPT_LAB_AGENT_AUTHOR_ID=
 ```
 
@@ -27,6 +28,7 @@ Use a long random value for `PROMPT_LAB_AGENT_TOKEN`.
 
 Set `PROMPT_LAB_AGENT_AUTOPUBLISH=true` only after manual review works reliably.
 Set `PROMPT_LAB_AGENT_AUTHOR_ID` to the profile/user UUID that should own automated posts.
+Set `PROMPT_LAB_AGENT_AUTOPUBLISH_MIN_SCORE` to the minimum quality score required for direct publishing.
 
 ## Draft API
 
@@ -107,6 +109,8 @@ POST https://prompt-lab-drab-xi.vercel.app/api/agent/prompt-drafts
 
 Use Authorization: Bearer ${PROMPT_LAB_AGENT_TOKEN}
 
+The local submit script can also read `PROMPT_LAB_AGENT_TOKEN` from `.env.vercel.local`.
+
 Set autoPublish to false.
 
 Implementation detail:
@@ -117,19 +121,19 @@ Implementation detail:
 - If the API returns an error, fix the JSON and retry once.
 ```
 
-## Later Auto-Publish Prompt
+## Auto-Publish Prompt
 
-Use only after manual review quality is stable:
+Use this only when Hermes can attach an original generated sample image. Prompt Lab will not publish image posts without an image.
 
 ```text
-Every day at 10am and 4pm, create one high-quality Prompt Lab post draft from current AI image prompt trends.
+Every day at 9am, research recent AI image prompt trends from public web sources and create 2-3 high-quality Prompt Lab posts.
 
 Only set autoPublish to true when:
-- qualityScore is 8.0 or higher
-- an original generated sample image URL is available
+- qualityScore is 8.5 or higher
+- an original generated sample image is attached through imageFile, imageUrl, or imageUrls
 - source material was used only for trend research
 - no prompt was copied verbatim
 - no brand, celebrity, copyrighted character, or unsafe content is included
 
-Otherwise submit it as a pending draft with autoPublish false.
+If any condition is not satisfied, submit it as a pending draft with autoPublish false.
 ```

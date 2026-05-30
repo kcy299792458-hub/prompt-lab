@@ -21,6 +21,11 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ ok: false, error: message }, { status });
 }
 
+function getAutoPublishMinScore() {
+  const score = Number(process.env.PROMPT_LAB_AGENT_AUTOPUBLISH_MIN_SCORE);
+  return Number.isFinite(score) ? score : 8.5;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -170,17 +175,34 @@ export async function POST(request: NextRequest) {
     return jsonError(error?.message || "Draft could not be created.", 500);
   }
 
+  const autoPublishEnabled = process.env.PROMPT_LAB_AGENT_AUTOPUBLISH === "true";
+  const autoPublishMinScore = getAutoPublishMinScore();
+  const hasPublishableImage = Boolean(draftInput.image_url || draftInput.image_urls.length > 0);
+  const meetsQualityBar = (draftInput.quality_score ?? 0) >= autoPublishMinScore;
   const shouldAutoPublish =
     normalized.autoPublish &&
-    process.env.PROMPT_LAB_AGENT_AUTOPUBLISH === "true" &&
-    (draftInput.quality_score ?? 0) >= 8;
+    autoPublishEnabled &&
+    hasPublishableImage &&
+    meetsQualityBar;
 
   if (!shouldAutoPublish) {
+    const autoPublishSkipReason = !normalized.autoPublish
+      ? "not_requested"
+      : !autoPublishEnabled
+        ? "disabled"
+        : !hasPublishableImage
+          ? "missing_image"
+          : !meetsQualityBar
+            ? "quality_score_below_minimum"
+            : "unknown";
+
     return NextResponse.json({
       ok: true,
       draft,
       published: false,
       autoPublishSkipped: normalized.autoPublish,
+      autoPublishSkipReason,
+      autoPublishMinScore,
     });
   }
 

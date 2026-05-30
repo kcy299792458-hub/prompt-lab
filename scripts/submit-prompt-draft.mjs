@@ -9,9 +9,14 @@ Usage:
   type draft.json | node scripts/submit-prompt-draft.mjs
 
 Required env:
-  PROMPT_LAB_AGENT_ENDPOINT
   PROMPT_LAB_AGENT_TOKEN
+
+Optional env:
+  PROMPT_LAB_AGENT_ENDPOINT
 `.trim();
+
+const DEFAULT_ENDPOINT = "https://prompt-lab-drab-xi.vercel.app/api/agent/prompt-drafts";
+const LOCAL_ENV_FILES = [".env.local", ".env.production.local", ".env.vercel.local"];
 
 function getArg(name) {
   const index = process.argv.indexOf(name);
@@ -45,12 +50,37 @@ async function readStdin() {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+async function loadLocalEnvFiles() {
+  for (const fileName of LOCAL_ENV_FILES) {
+    let raw = "";
+
+    try {
+      raw = await readFile(resolve(fileName), "utf8");
+    } catch {
+      continue;
+    }
+
+    for (const line of raw.split(/\r?\n/)) {
+      const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)\s*$/);
+      if (!match) continue;
+
+      const [, key, rawValue] = match;
+      if (process.env[key]) continue;
+
+      const value = rawValue.trim().replace(/^['"]|['"]$/g, "");
+      if (value) process.env[key] = value;
+    }
+  }
+}
+
 async function main() {
-  const endpoint = process.env.PROMPT_LAB_AGENT_ENDPOINT;
+  await loadLocalEnvFiles();
+
+  const endpoint = process.env.PROMPT_LAB_AGENT_ENDPOINT || DEFAULT_ENDPOINT;
   const token = process.env.PROMPT_LAB_AGENT_TOKEN;
 
-  if (!endpoint || !token) {
-    console.error("Missing PROMPT_LAB_AGENT_ENDPOINT or PROMPT_LAB_AGENT_TOKEN.");
+  if (!token) {
+    console.error("Missing PROMPT_LAB_AGENT_TOKEN.");
     console.error(usage);
     process.exit(2);
   }
