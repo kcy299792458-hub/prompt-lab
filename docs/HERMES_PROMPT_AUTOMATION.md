@@ -22,6 +22,9 @@ PROMPT_LAB_AGENT_TOKEN=...
 PROMPT_LAB_AGENT_AUTOPUBLISH=false
 PROMPT_LAB_AGENT_AUTOPUBLISH_MIN_SCORE=8.5
 PROMPT_LAB_AGENT_AUTHOR_ID=
+OPENAI_API_KEY=...
+OPENAI_IMAGE_MODEL=gpt-image-1
+OPENAI_IMAGE_QUALITY=medium
 ```
 
 Use a long random value for `PROMPT_LAB_AGENT_TOKEN`.
@@ -29,6 +32,7 @@ Use a long random value for `PROMPT_LAB_AGENT_TOKEN`.
 Set `PROMPT_LAB_AGENT_AUTOPUBLISH=true` only after manual review works reliably.
 Set `PROMPT_LAB_AGENT_AUTHOR_ID` to the profile/user UUID that should own automated posts.
 Set `PROMPT_LAB_AGENT_AUTOPUBLISH_MIN_SCORE` to the minimum quality score required for direct publishing.
+Set `OPENAI_API_KEY` locally for Hermes if scheduled jobs should generate images before submitting posts.
 
 ## Draft API
 
@@ -115,6 +119,7 @@ Set autoPublish to false.
 
 Implementation detail:
 - Write one draft at a time as valid JSON to `.hermes-draft.json`.
+- Generate a local image with `node scripts/generate-prompt-image.mjs --file .hermes-draft.json`.
 - Submit it with `node scripts/submit-prompt-draft.mjs --file .hermes-draft.json`.
 - If Hermes creates a local sample image, set `"imageFile": "C:/absolute/path/to/image.png"` in the JSON.
   The submit script will send it to Prompt Lab and the API will upload it to Supabase Storage.

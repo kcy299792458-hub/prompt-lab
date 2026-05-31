@@ -16,7 +16,7 @@ Optional env:
 `.trim();
 
 const DEFAULT_ENDPOINT = "https://prompt-lab-drab-xi.vercel.app/api/agent/prompt-drafts";
-const LOCAL_ENV_FILES = [".env.local", ".env.production.local", ".env.vercel.local"];
+const LOCAL_ENV_FILES = [".env.local", ".env.production.local", ".env.vercel.local", ".env.hermes.local"];
 
 function getArg(name) {
   const index = process.argv.indexOf(name);
