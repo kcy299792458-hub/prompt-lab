@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -8,10 +9,10 @@ const usage = `
 Usage:
   node scripts/generate-prompt-image.mjs --file .hermes-draft.json
 
-Required env:
-  OPENAI_API_KEY
-
 Optional env:
+  PROMPT_LAB_IMAGE_PROVIDER=openai-codex
+  HERMES_HOME=C:/Users/PC/AppData/Local/hermes
+  OPENAI_API_KEY
   OPENAI_IMAGE_MODEL=gpt-image-1
   OPENAI_IMAGE_QUALITY=medium
   PROMPT_LAB_AGENT_AUTOPUBLISH_MIN_SCORE=8.5
@@ -68,6 +69,14 @@ function sizeForAspectRatio(aspectRatio) {
   return "1024x1024";
 }
 
+function hermesAspectRatio(aspectRatio) {
+  const ratio = String(aspectRatio || "").toLowerCase().replace(/\s/g, "");
+
+  if (["16:9", "3:2", "16:10", "2:1"].includes(ratio)) return "landscape";
+  if (["4:5", "9:16", "2:3", "3:4"].includes(ratio)) return "portrait";
+  return "square";
+}
+
 function getQualityScore(payload) {
   const score = Number(payload.qualityScore ?? payload.quality_score ?? 0);
   return Number.isFinite(score) ? score : 0;
@@ -91,6 +100,15 @@ function buildImagePrompt(payload) {
     "Prompt to render:",
     promptBody,
   ].join("\n");
+}
+
+function cleanRiskNotes(value) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !/원본 샘플 이미지를 생성할 수 없어|자동 발행은 요청하지 않습니다|image generation unavailable|Missing OPENAI_API_KEY/i.test(line))
+    .join("\n");
 }
 
 async function generateImage({ apiKey, model, quality, prompt, size }) {
@@ -138,17 +156,132 @@ async function generateImage({ apiKey, model, quality, prompt, size }) {
   throw new Error("OpenAI image response did not include b64_json or url.");
 }
 
+function getHermesHome() {
+  if (process.env.HERMES_HOME) return process.env.HERMES_HOME;
+  if (process.env.LOCALAPPDATA) return resolve(process.env.LOCALAPPDATA, "hermes");
+  return "";
+}
+
+async function hermesConfigUsesOpenAICodex() {
+  const hermesHome = getHermesHome();
+  if (!hermesHome) return false;
+
+  try {
+    const config = await readFile(resolve(hermesHome, "config.yaml"), "utf8");
+    let insideImageGen = false;
+
+    for (const line of config.split(/\r?\n/)) {
+      if (/^image_gen:\s*$/.test(line)) {
+        insideImageGen = true;
+        continue;
+      }
+
+      if (insideImageGen && /^[A-Za-z_][A-Za-z0-9_-]*:/.test(line)) {
+        break;
+      }
+
+      if (insideImageGen && /^\s+provider:\s*openai-codex\b/.test(line)) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function runPython({ cwd, env, input }) {
+  return new Promise((resolvePromise, reject) => {
+    const python = process.env.HERMES_PYTHON || "python";
+    const script = String.raw`
+import importlib
+import json
+import sys
+
+request = json.loads(sys.stdin.buffer.read().decode("utf-8"))
+plugin = importlib.import_module("plugins.image_gen.openai-codex")
+provider = plugin.OpenAICodexImageGenProvider()
+result = provider.generate(
+    request["prompt"],
+    aspect_ratio=request.get("aspectRatio") or "square",
+)
+print(json.dumps(result, ensure_ascii=True))
+`;
+
+    const child = spawn(python, ["-c", script], {
+      cwd,
+      env,
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true,
+    });
+
+    const stdout = [];
+    const stderr = [];
+
+    child.stdout.on("data", (chunk) => stdout.push(Buffer.from(chunk)));
+    child.stderr.on("data", (chunk) => stderr.push(Buffer.from(chunk)));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      const out = Buffer.concat(stdout).toString("utf8").trim();
+      const err = Buffer.concat(stderr).toString("utf8").trim();
+
+      if (code !== 0) {
+        reject(new Error(err || out || `Python exited with code ${code}.`));
+        return;
+      }
+
+      try {
+        resolvePromise(JSON.parse(out));
+      } catch {
+        reject(new Error(`Hermes image provider returned invalid JSON: ${out || err}`));
+      }
+    });
+
+    child.stdin.end(JSON.stringify(input));
+  });
+}
+
+async function generateImageWithHermesCodex({ prompt, aspectRatio }) {
+  const hermesHome = getHermesHome();
+
+  if (!hermesHome) {
+    throw new Error("HERMES_HOME is not configured and LOCALAPPDATA is unavailable.");
+  }
+
+  const hermesAgentDir = resolve(hermesHome, "hermes-agent");
+  const result = await runPython({
+    cwd: hermesAgentDir,
+    env: {
+      ...process.env,
+      HERMES_HOME: hermesHome,
+    },
+    input: {
+      prompt,
+      aspectRatio: hermesAspectRatio(aspectRatio),
+    },
+  });
+
+  if (!result?.success || !result.image) {
+    throw new Error(result?.error || "Hermes Codex image generation failed.");
+  }
+
+  await access(result.image);
+
+  return {
+    imageFile: result.image,
+    model: result.model || "gpt-image-2",
+    provider: result.provider || "openai-codex",
+    quality: result.quality || "medium",
+    size: result.size || hermesAspectRatio(aspectRatio),
+  };
+}
+
 async function main() {
   await loadLocalEnvFiles();
 
   const apiKey = process.env.OPENAI_API_KEY;
   const filePath = getArg("--file");
-
-  if (!apiKey) {
-    console.error("Missing OPENAI_API_KEY.");
-    console.error(usage);
-    process.exit(2);
-  }
 
   if (!filePath) {
     console.error("Missing --file.");
@@ -170,18 +303,52 @@ async function main() {
   const quality = process.env.OPENAI_IMAGE_QUALITY || DEFAULT_QUALITY;
   const size = sizeForAspectRatio(payload.aspectRatio || payload.aspect_ratio);
   const prompt = buildImagePrompt(payload);
-  const imageBuffer = await generateImage({ apiKey, model, quality, prompt, size });
-  const today = new Date().toISOString().slice(0, 10);
-  const outputPath = resolve(".hermes", "images", today, `${slugify(payload.title)}-${randomUUID()}.png`);
+  const providerPreference = String(
+    process.env.PROMPT_LAB_IMAGE_PROVIDER ||
+      process.env.HERMES_IMAGE_PROVIDER ||
+      process.env.OPENAI_IMAGE_PROVIDER ||
+      "",
+  ).toLowerCase();
+  const useHermesCodex =
+    providerPreference === "openai-codex" ||
+    providerPreference === "hermes-openai-codex" ||
+    (await hermesConfigUsesOpenAICodex());
 
-  await mkdir(dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, imageBuffer);
+  let generated;
 
-  payload.imageFile = outputPath.replace(/\\/g, "/");
+  if (useHermesCodex) {
+    generated = await generateImageWithHermesCodex({
+      prompt,
+      aspectRatio: payload.aspectRatio || payload.aspect_ratio,
+    });
+  } else {
+    if (!apiKey) {
+      console.error("Missing OPENAI_API_KEY, and Hermes openai-codex image provider is not configured.");
+      console.error(usage);
+      process.exit(2);
+    }
+
+    const imageBuffer = await generateImage({ apiKey, model, quality, prompt, size });
+    const today = new Date().toISOString().slice(0, 10);
+    const outputPath = resolve(".hermes", "images", today, `${slugify(payload.title)}-${randomUUID()}.png`);
+
+    await mkdir(dirname(outputPath), { recursive: true });
+    await writeFile(outputPath, imageBuffer);
+
+    generated = {
+      imageFile: outputPath,
+      model,
+      provider: "openai-api",
+      quality,
+      size,
+    };
+  }
+
+  payload.imageFile = generated.imageFile.replace(/\\/g, "/");
   payload.autoPublish = qualityScore >= minScore;
   payload.riskNotes = [
-    payload.riskNotes || payload.risk_notes || "",
-    `Original sample image generated with ${model}, ${quality} quality, ${size}.`,
+    cleanRiskNotes(payload.riskNotes || payload.risk_notes),
+    `Original sample image generated with ${generated.provider}, ${generated.model}, ${generated.quality} quality, ${generated.size}.`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -194,9 +361,10 @@ async function main() {
     autoPublish: payload.autoPublish,
     qualityScore,
     minScore,
-    model,
-    quality,
-    size,
+    provider: generated.provider,
+    model: generated.model,
+    quality: generated.quality,
+    size: generated.size,
   }, null, 2));
 }
 

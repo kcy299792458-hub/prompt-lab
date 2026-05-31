@@ -22,6 +22,7 @@ PROMPT_LAB_AGENT_TOKEN=...
 PROMPT_LAB_AGENT_AUTOPUBLISH=false
 PROMPT_LAB_AGENT_AUTOPUBLISH_MIN_SCORE=8.5
 PROMPT_LAB_AGENT_AUTHOR_ID=
+PROMPT_LAB_IMAGE_PROVIDER=openai-codex
 OPENAI_API_KEY=...
 OPENAI_IMAGE_MODEL=gpt-image-1
 OPENAI_IMAGE_QUALITY=medium
@@ -32,7 +33,8 @@ Use a long random value for `PROMPT_LAB_AGENT_TOKEN`.
 Set `PROMPT_LAB_AGENT_AUTOPUBLISH=true` only after manual review works reliably.
 Set `PROMPT_LAB_AGENT_AUTHOR_ID` to the profile/user UUID that should own automated posts.
 Set `PROMPT_LAB_AGENT_AUTOPUBLISH_MIN_SCORE` to the minimum quality score required for direct publishing.
-Set `OPENAI_API_KEY` locally for Hermes if scheduled jobs should generate images before submitting posts.
+Set `PROMPT_LAB_IMAGE_PROVIDER=openai-codex` to generate images through Hermes Codex/ChatGPT OAuth instead of an OpenAI API key.
+Set `OPENAI_API_KEY` locally only if scheduled jobs should use the OpenAI API-key image path instead.
 
 ## Draft API
 
