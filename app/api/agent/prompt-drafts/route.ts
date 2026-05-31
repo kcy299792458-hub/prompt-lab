@@ -21,6 +21,16 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ ok: false, error: message }, { status });
 }
 
+const HERMES_AGENT_AUTHOR = {
+  id: "10000000-0000-4000-8000-000000000099",
+  email: "hermes-agent@promptlab.example",
+  authNickname: "hermes_agent",
+  nickname: "\uD5E4\uB974\uBA54\uC2A4\uB7A9",
+  bio: "\uC6F9\uC5D0\uC11C AI \uC774\uBBF8\uC9C0 \uD504\uB86C\uD504\uD2B8 \uD750\uB984\uC744 \uC870\uC0AC\uD558\uACE0, \uD504\uB86C\uD504\uD2B8\uB7A9\uC6A9 \uC608\uC2DC\uB97C \uC815\uB9AC\uD558\uB294 \uC790\uB3D9 \uC791\uC131\uC790\uC785\uB2C8\uB2E4.",
+  specialty:
+    "AI \uC774\uBBF8\uC9C0 \uD2B8\uB80C\uB4DC \uB9AC\uC11C\uCE58, \uD504\uB86C\uD504\uD2B8 \uC7AC\uC791\uC131, \uACB0\uACFC \uC608\uC2DC \uD050\uB808\uC774\uC158",
+};
+
 function getAutoPublishMinScore() {
   const score = Number(process.env.PROMPT_LAB_AGENT_AUTOPUBLISH_MIN_SCORE);
   return Number.isFinite(score) ? score : 8.5;
@@ -102,6 +112,70 @@ async function attachUploadedImage(payload: unknown, supabase: NonNullable<Retur
     imageUrl: typeof payload.imageUrl === "string" && payload.imageUrl.trim() ? payload.imageUrl : publicUrl,
     imageUrls,
   };
+}
+
+async function ensureHermesAgentAuthor(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServiceRoleClient>>,
+  authorId: string,
+) {
+  if (authorId !== HERMES_AGENT_AUTHOR.id) return;
+
+  const { data: existingProfile, error: profileReadError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", HERMES_AGENT_AUTHOR.id)
+    .maybeSingle();
+
+  if (profileReadError) {
+    throw new Error(profileReadError.message);
+  }
+
+  if (existingProfile) return;
+
+  const existingUser = await supabase.auth.admin.getUserById(HERMES_AGENT_AUTHOR.id);
+
+  if (existingUser.error) {
+    const created = await supabase.auth.admin.createUser({
+      id: HERMES_AGENT_AUTHOR.id,
+      email: HERMES_AGENT_AUTHOR.email,
+      email_confirm: true,
+      user_metadata: { nickname: HERMES_AGENT_AUTHOR.authNickname },
+      app_metadata: { provider: "email", providers: ["email"] },
+    });
+
+    if (created.error) {
+      throw new Error(created.error.message);
+    }
+  } else {
+    const updated = await supabase.auth.admin.updateUserById(HERMES_AGENT_AUTHOR.id, {
+      email: HERMES_AGENT_AUTHOR.email,
+      email_confirm: true,
+      user_metadata: { nickname: HERMES_AGENT_AUTHOR.authNickname },
+      app_metadata: { provider: "email", providers: ["email"] },
+    });
+
+    if (updated.error) {
+      throw new Error(updated.error.message);
+    }
+  }
+
+  const { error: profileWriteError } = await supabase.from("profiles").upsert(
+    {
+      id: HERMES_AGENT_AUTHOR.id,
+      nickname: HERMES_AGENT_AUTHOR.nickname,
+      bio: HERMES_AGENT_AUTHOR.bio,
+      specialty: HERMES_AGENT_AUTHOR.specialty,
+      website_url: "",
+      instagram_url: "",
+      x_url: "",
+      role: "user",
+    },
+    { onConflict: "id" },
+  );
+
+  if (profileWriteError) {
+    throw new Error(profileWriteError.message);
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -218,6 +292,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await ensureHermesAgentAuthor(supabase, authorId);
     const postId = await publishPromptDraft(supabase, draft as PromptDraftRow, authorId);
     return NextResponse.json({
       ok: true,
