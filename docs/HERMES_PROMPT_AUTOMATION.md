@@ -134,7 +134,9 @@ Implementation detail:
 Use this only when Hermes can attach an original generated sample image. Prompt Lab will not publish image posts without an image.
 
 ```text
-Every day at 9am, research recent AI image prompt trends from public web sources and create 2-3 high-quality Prompt Lab posts.
+Every day at 9am, research recent AI image prompt trends from public web sources and create 5 high-quality Prompt Lab posts.
+
+Do not stop at 2 posts. If fewer than 5 ideas can safely pass the quality and originality bar, publish as many as pass and explain the blocker in the final summary.
 
 Only set autoPublish to true when:
 - qualityScore is 8.5 or higher
