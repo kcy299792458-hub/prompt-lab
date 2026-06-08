@@ -11,3 +11,4 @@ yarn-error.log*
 .env*
 .hermes/
 .hermes-draft.json
+.hermes-instagram-run-summary.md

@@ -51,7 +51,7 @@ Example payload:
 ```json
 {
   "title": "GPT Image 액션 피규어 패키지 프롬프트",
-  "description": "투명 블리스터 팩과 소품 칸이 있는 피규어 패키지 이미지 프롬프트.",
+  "promptNote": "피규어 콘셉트와 소품 목록만 바꿔도 응용하기 좋습니다. 패키지 문구는 짧게 두거나 비워두면 결과가 깔끔합니다.",
   "promptBody": "Create a vertical 4:5 premium product photograph...",
   "category": "제품/광고",
   "model": "GPT Image",
@@ -97,12 +97,13 @@ Select the top 3 ideas.
 
 For each selected idea, create:
 - Korean SEO title, 2-80 characters
-- Korean description, under 1000 characters
+- Korean promptNote, 0-2 short lines. Make it a practical usage tip specific to the prompt. Leave it empty when there is no useful tip.
 - English prompt body, detailed and copy-ready
 - category
 - model
 - aspect ratio
 - style
+- promptNote: briefly mention what users can customize, what to watch out for, or what makes the output cleaner. Do not repeat the title and do not write a long description.
 - 4-6 tags
 - source URLs
 - source notes

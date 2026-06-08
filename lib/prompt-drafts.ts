@@ -91,12 +91,25 @@ function left(value: string, length: number) {
   return value.slice(0, length);
 }
 
+function normalizePromptNote(input: Record<string, unknown>) {
+  const note = pickString(input, [
+    "prompt_note",
+    "promptNote",
+    "usage_note",
+    "usageNote",
+    "description",
+    "summary",
+  ]);
+
+  return left(note, 240);
+}
+
 export function normalizePromptDraftInput(payload: unknown):
   | { data: NormalizedPromptDraft; autoPublish: boolean }
   | { error: string } {
   const input = asRecord(payload);
   const title = left(pickString(input, ["title", "seoTitle"]), 80);
-  const description = left(pickString(input, ["description", "summary"]), 1000);
+  const description = normalizePromptNote(input);
   const promptBody = left(pickString(input, ["prompt_body", "promptBody", "body", "prompt"]), 12000);
 
   if (title.length < 2) {
