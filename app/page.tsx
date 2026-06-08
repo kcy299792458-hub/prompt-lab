@@ -598,6 +598,17 @@ export default function Home() {
         </label>
       </section>
 
+      <section className="dc-mobile-community-entry" aria-label="글 게시판 바로가기">
+        <div>
+          <strong>글 게시판</strong>
+          <span>잡담, 질문, 요청글을 바로 확인</span>
+        </div>
+        <div>
+          <Link href="/boards">게시판 가기</Link>
+          <Link href="/requests">요청 보기</Link>
+        </div>
+      </section>
+
       <section className="dc-rank-grid dc-home-panels" aria-label="커뮤니티 현황">
         <aside className="dc-rank-box">
           <div className="dc-rank-head">
@@ -679,9 +690,6 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <Link className="dc-write-link" href="/boards">
-            글 게시판 보기
-          </Link>
         </aside>
 
         <div className="gallery-column dc-gallery-column">
