@@ -48,6 +48,18 @@ function pickString(input: Record<string, unknown>, keys: string[]) {
   return "";
 }
 
+function pickStringValue(input: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = input[key];
+    if (typeof value === "string") return value.trim();
+  }
+  return "";
+}
+
+function clip(value: string, maxLength: number) {
+  return value.length > maxLength ? value.slice(0, maxLength) : value;
+}
+
 function extensionForMime(mimeType: string) {
   switch (mimeType) {
     case "image/jpeg":
@@ -313,6 +325,119 @@ export async function POST(request: NextRequest) {
 
     return jsonError(error instanceof Error ? error.message : "Auto publish failed.", 500);
   }
+}
+
+export async function PATCH(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return jsonError("Unauthorized.", 401);
+  }
+
+  const supabase = createSupabaseServiceRoleClient();
+  if (!supabase) {
+    return jsonError("Supabase service role is not configured.", 503);
+  }
+
+  let payload: unknown;
+
+  try {
+    payload = await request.json();
+  } catch {
+    return jsonError("Request body must be JSON.", 400);
+  }
+
+  if (!isRecord(payload)) {
+    return jsonError("Request body must be an object.", 400);
+  }
+
+  const rawUpdates = Array.isArray(payload.updates) ? payload.updates : [payload];
+  const updates = rawUpdates.slice(0, 50);
+  const authorId = process.env.PROMPT_LAB_AGENT_AUTHOR_ID;
+  const now = new Date().toISOString();
+  const results = [];
+
+  for (const item of updates) {
+    if (!isRecord(item)) {
+      results.push({ ok: false, error: "Update item must be an object." });
+      continue;
+    }
+
+    const postId = pickString(item, [
+      "postId",
+      "post_id",
+      "publishedImagePostId",
+      "published_image_post_id",
+    ]);
+    const draftId = pickString(item, ["draftId", "draft_id", "id"]);
+    const description = clip(
+      pickStringValue(item, [
+        "promptNote",
+        "prompt_note",
+        "usageNote",
+        "usage_note",
+        "description",
+        "summary",
+      ]),
+      240,
+    );
+
+    if (!postId) {
+      results.push({ ok: false, draftId, error: "Post id is required." });
+      continue;
+    }
+
+    const imagePostUpdate = supabase
+      .from("image_posts")
+      .update({ description, updated_at: now })
+      .eq("id", postId);
+    const scopedImagePostUpdate = authorId ? imagePostUpdate.eq("author_id", authorId) : imagePostUpdate;
+    const { data: imagePost, error: imagePostError } = await scopedImagePostUpdate
+      .select("id, title, description")
+      .maybeSingle();
+
+    if (imagePostError) {
+      results.push({ ok: false, postId, draftId, error: imagePostError.message });
+      continue;
+    }
+
+    if (!imagePost) {
+      results.push({ ok: false, postId, draftId, error: "Published post was not found." });
+      continue;
+    }
+
+    if (draftId) {
+      const { error: draftError } = await supabase
+        .from("prompt_drafts")
+        .update({ description, updated_at: now })
+        .eq("id", draftId)
+        .eq("published_image_post_id", postId);
+
+      if (draftError) {
+        results.push({ ok: false, postId, draftId, error: draftError.message });
+        continue;
+      }
+    }
+
+    results.push({
+      ok: true,
+      postId,
+      draftId,
+      title: imagePost.title,
+      description: imagePost.description,
+    });
+  }
+
+  const updatedCount = results.filter((result) => result.ok).length;
+  const failedCount = results.length - updatedCount;
+
+  return NextResponse.json(
+    {
+      ok: failedCount === 0,
+      updatedCount,
+      failedCount,
+      results,
+    },
+    { status: failedCount === 0 ? 200 : 207 },
+  );
 }
 
 export async function DELETE(request: NextRequest) {
