@@ -4213,6 +4213,65 @@ body,
 }
 
 @media (max-width: 760px) {
+  .dc-topbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .dc-brand {
+    width: 100%;
+  }
+
+  .topnav.dc-topnav {
+    display: grid;
+    gap: 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .topnav.dc-topnav a,
+  .topnav.dc-topnav button,
+  .topnav.dc-topnav .auth-profile,
+  .topnav.dc-topnav .auth-admin-link {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #c7cbd0;
+    border-radius: 3px;
+    color: #222222;
+    display: inline-flex;
+    font-size: 13px;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 8px;
+    text-align: center;
+  }
+
+  .topnav.dc-topnav a[href="/boards"] {
+    background: #31353b;
+    border-color: #31353b;
+    color: #ffffff;
+  }
+
+  .topnav.dc-topnav .auth-user {
+    display: grid;
+    gap: 6px;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) 42px;
+  }
+
+  .topnav.dc-topnav .auth-admin-link {
+    grid-column: 1 / -1;
+  }
+
+  .topnav.dc-topnav .auth-logout {
+    border: 1px solid #c7cbd0;
+    height: 42px;
+    width: auto;
+  }
+
   .dc-board-write-panel .dc-write-grid,
   .dc-image-preview-grid,
   .dc-board-image-grid,
