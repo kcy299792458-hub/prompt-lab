@@ -138,6 +138,16 @@ Every day at 9am, research recent AI image prompt trends from public web sources
 
 Do not stop at 2 posts. If fewer than 5 ideas can safely pass the quality and originality bar, publish as many as pass and explain the blocker in the final summary.
 
+At least 3 of the 5 daily posts must be user-photo transformation prompts. These are prompts where the user can upload their own portrait, selfie, or full-body photo and transform that same person into a better cinematic, editorial, travel, sports, seasonal, or fantasy-style image.
+
+Prioritize trends such as underwater sunlight-caustic portraits, baseball stadium jumbotron or broadcast fan-cam edits, rainy neon street portraits, airport fashion editorials, concert spotlight portraits, snow globe winter portraits, vintage photo booth editorials, and similar Instagram-friendly self-photo transformations.
+
+For user-photo transformation prompts:
+- Write the prompt for consensual self-use only.
+- Do not encourage uploading photos of strangers, minors, celebrities, or private people without consent.
+- The generated sample image must use a fictional adult subject.
+- The prompt body should preserve the uploaded person's facial identity and recognizable features while changing only the scene, styling, lighting, camera angle, and atmosphere.
+
 Only set autoPublish to true when:
 - qualityScore is 8.5 or higher
 - an original generated sample image is attached through imageFile, imageUrl, or imageUrls
